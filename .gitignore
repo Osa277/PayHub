@@ -38,3 +38,5 @@ yarn-error.log*
 *~
 
 /generated/prisma
+prisma/*.db
+prisma/*.db-journal
