@@ -1,0 +1,52 @@
+{
+  "name": "payment-app",
+  "version": "1.0.0",
+  "description": "Local and International Payment Application",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "@prisma/client": "^6.19.2",
+    "@stripe/react-stripe-js": "^2.4.0",
+    "@stripe/stripe-js": "^2.1.0",
+    "axios": "^1.6.0",
+    "bcryptjs": "^3.0.3",
+    "date-fns": "^2.30.0",
+    "next": "^14.0.0",
+    "next-auth": "^4.24.13",
+    "prisma": "^6.19.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "resend": "^6.9.4",
+    "stripe": "^21.0.1",
+    "swr": "^2.4.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "dotenv": "^17.3.1",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "^14.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  }
+}
