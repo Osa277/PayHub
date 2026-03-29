@@ -14,6 +14,22 @@ export async function GET(_req: NextRequest) {
       )
     }
 
+    // Ensure user exists in database (important for OAuth users)
+    let user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+
+    if (!user) {
+      // Create user if doesn't exist (OAuth users)
+      user = await prisma.user.create({
+        data: {
+          id: session.user.id,
+          email: session.user.email || `user-${session.user.id}@example.com`,
+          name: session.user.name,
+        },
+      })
+    }
+
     let cryptoWallet = await prisma.cryptoWallet.findUnique({
       where: { userId: session.user.id },
     })
