@@ -1,57 +1,169 @@
+import { NextRequest, NextResponse } from 'next/server'
+
 /**
- * Simple in-memory rate limiter for API routes.
- * For production with multiple instances, replace with Redis-backed solution.
+ * Simple in-memory rate limiter for Next.js
+ * Tracks requests by IP or user ID
  */
 
-interface RateLimitEntry {
-  count: number
-  resetAt: number
+interface RateLimitStore {
+  [key: string]: { count: number; resetTime: number }
 }
 
-const store = new Map<string, RateLimitEntry>()
+const store: RateLimitStore = {}
 
-// Clean up expired entries periodically
+/**
+ * Clean up expired entries
+ */
 setInterval(() => {
   const now = Date.now()
-  for (const [key, entry] of store) {
-    if (entry.resetAt < now) store.delete(key)
+  for (const key in store) {
+    if (store[key].resetTime < now) {
+      delete store[key]
+    }
   }
-}, 60_000)
+}, 60000) // Clean every minute
 
-interface RateLimitConfig {
-  /** Max requests allowed in the window */
-  max: number
-  /** Window duration in seconds */
-  windowSec: number
+export interface RateLimitOptions {
+  interval?: number // Time window in ms (default: 60s)
+  maxRequests?: number // Max requests per interval (default: 10)
+  keyGenerator?: (req: NextRequest) => string // Custom key (default: IP)
 }
 
-export function rateLimit(key: string, config: RateLimitConfig): { success: boolean; remaining: number } {
+/**
+ * Rate limit middleware
+ * Usage: if (await rateLimitMiddleware(req, options)) return TooManyRequests
+ */
+export async function rateLimitMiddleware(
+  req: NextRequest,
+  options: RateLimitOptions = {}
+): Promise<boolean> {
+  const { interval = 60000, maxRequests = 10, keyGenerator } = options
+
+  // Generate rate limit key (IP address by default)
+  const key = keyGenerator ? keyGenerator(req) : req.ip || 'unknown'
+
   const now = Date.now()
-  const entry = store.get(key)
+  const entry = store[key]
 
-  if (!entry || entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + config.windowSec * 1000 })
-    return { success: true, remaining: config.max - 1 }
+  if (!entry) {
+    // First request in window
+    store[key] = { count: 1, resetTime: now + interval }
+    return false // Not rate limited
   }
 
-  if (entry.count >= config.max) {
-    return { success: false, remaining: 0 }
+  if (entry.resetTime < now) {
+    // Window expired, reset
+    store[key] = { count: 1, resetTime: now + interval }
+    return false // Not rate limited
   }
 
+  // Within window
   entry.count++
-  return { success: true, remaining: config.max - entry.count }
+  return entry.count > maxRequests // Rate limited if over limit
 }
 
-/** Pre-configured limiters for common routes */
-export const rateLimiters = {
-  /** 3 requests per 15 minutes for forgot-password */
-  forgotPassword: (ip: string) => rateLimit(`forgot:${ip}`, { max: 3, windowSec: 900 }),
-  /** 5 requests per hour for signup */
-  signup: (ip: string) => rateLimit(`signup:${ip}`, { max: 5, windowSec: 3600 }),
-  /** 10 requests per minute for payments */
-  payment: (userId: string) => rateLimit(`payment:${userId}`, { max: 10, windowSec: 60 }),
-  /** 20 requests per minute for transfers */
-  transfer: (userId: string) => rateLimit(`transfer:${userId}`, { max: 20, windowSec: 60 }),
-  /** 5 login attempts per 15 minutes */
-  login: (ip: string) => rateLimit(`login:${ip}`, { max: 5, windowSec: 900 }),
+/**
+ * Create rate limit response
+ */
+export function rateLimitResponse(retryAfter: number = 60) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Too many requests. Please try again later.',
+      retryAfter,
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': retryAfter.toString(),
+        'X-RateLimit-Limit': '10',
+        'X-RateLimit-Remaining': '0',
+      },
+    }
+  )
 }
+
+// ─── Backward Compatibility (Legacy API) ───
+
+/**
+ * Legacy rate limiters object for backward compatibility
+ * Old endpoints use this API
+ */
+export const rateLimiters = {
+  forgotPassword: (ip: string) => {
+    const key = `forgot-password:${ip}`
+    const now = Date.now()
+    const entry = store[key]
+
+    if (!entry) {
+      store[key] = { count: 1, resetTime: now + 900000 } // 15 min window
+      return { success: true }
+    }
+
+    if (entry.resetTime < now) {
+      store[key] = { count: 1, resetTime: now + 900000 }
+      return { success: true }
+    }
+
+    entry.count++
+    return { success: entry.count <= 3 } // Max 3 per 15 min
+  },
+
+  signup: (ip: string) => {
+    const key = `signup:${ip}`
+    const now = Date.now()
+    const entry = store[key]
+
+    if (!entry) {
+      store[key] = { count: 1, resetTime: now + 3600000 } // 1 hour window
+      return { success: true }
+    }
+
+    if (entry.resetTime < now) {
+      store[key] = { count: 1, resetTime: now + 3600000 }
+      return { success: true }
+    }
+
+    entry.count++
+    return { success: entry.count <= 5 } // Max 5 per hour
+  },
+
+  payment: (ip: string) => {
+    const key = `payment:${ip}`
+    const now = Date.now()
+    const entry = store[key]
+
+    if (!entry) {
+      store[key] = { count: 1, resetTime: now + 60000 } // 1 min window
+      return { success: true }
+    }
+
+    if (entry.resetTime < now) {
+      store[key] = { count: 1, resetTime: now + 60000 }
+      return { success: true }
+    }
+
+    entry.count++
+    return { success: entry.count <= 10 } // Max 10 per min
+  },
+
+  transfer: (ip: string) => {
+    const key = `transfer:${ip}`
+    const now = Date.now()
+    const entry = store[key]
+
+    if (!entry) {
+      store[key] = { count: 1, resetTime: now + 60000 } // 1 min window
+      return { success: true }
+    }
+
+    if (entry.resetTime < now) {
+      store[key] = { count: 1, resetTime: now + 60000 }
+      return { success: true }
+    }
+
+    entry.count++
+    return { success: entry.count <= 5 } // Max 5 per min
+  },
+}
+

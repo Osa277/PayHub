@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { convertFiatToCrypto, getCryptoPrice } from '@/lib/crypto-rates'
+import { rateLimitMiddleware, rateLimitResponse } from '@/lib/rate-limit'
 
 const buySchema = z.object({
   cryptocurrency: z.enum(['BTC', 'ETH', 'USDT']),
@@ -20,6 +21,17 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
+    }
+
+    // Rate limit: max 10 buy requests per minute per user
+    const isRateLimited = await rateLimitMiddleware(req, {
+      interval: 60000,
+      maxRequests: 10,
+      keyGenerator: () => `user:${session.user.id}`,
+    })
+
+    if (isRateLimited) {
+      return rateLimitResponse(60)
     }
 
     const body = await req.json()

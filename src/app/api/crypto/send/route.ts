@@ -14,6 +14,7 @@ import {
 import { getCryptoPrice } from '@/lib/crypto-rates'
 import { sendEthereumTransaction, sendUSDTTransaction } from '@/lib/wallet-manager'
 import { createBitcoinTransaction } from '@/lib/bitcoin-handler'
+import { rateLimitMiddleware, rateLimitResponse } from '@/lib/rate-limit'
 
 const sendSchema = z.object({
   cryptocurrency: z.enum(['BTC', 'ETH', 'USDT']),
@@ -29,6 +30,17 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
+    }
+
+    // Rate limit: max 5 send requests per minute per user
+    const isRateLimited = await rateLimitMiddleware(req, {
+      interval: 60000,
+      maxRequests: 5,
+      keyGenerator: () => `user:${session.user.id}`,
+    })
+
+    if (isRateLimited) {
+      return rateLimitResponse(60)
     }
 
     const body = await req.json()
