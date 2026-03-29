@@ -49,7 +49,7 @@ export default function Home() {
           </li>
           <li className="flex items-start gap-3">
             <span className="text-green-600 font-bold">✓</span>
-            <span>Stripe & PayPal integration</span>
+            <span>Paystack & Crypto payment support</span>
           </li>
           <li className="flex items-start gap-3">
             <span className="text-green-600 font-bold">✓</span>

@@ -11,8 +11,6 @@ import { CURRENCY_SYMBOLS } from '@/lib/constants'
 function TopUpModal({
   open,
   onClose,
-  onSuccess,
-  currency,
 }: {
   open: boolean
   onClose: () => void
@@ -22,7 +20,6 @@ function TopUpModal({
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
   if (!open) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,19 +32,18 @@ function TopUpModal({
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/wallet/topup', {
+      const res = await fetch('/api/paystack/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: num }),
+        body: JSON.stringify({ amount: num, currency: 'NGN' }),
       })
       const data = await res.json()
       if (!data.success) {
         setError(data.error)
         return
       }
-      setAmount('')
-      onSuccess()
-      onClose()
+      // Redirect to Paystack checkout
+      window.location.href = data.data.authorizationUrl
     } catch {
       setError('Something went wrong')
     } finally {
@@ -60,9 +56,17 @@ function TopUpModal({
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Top Up Wallet</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+            <span className="text-lg">🏦</span>
+            <div>
+              <p className="text-sm font-medium text-green-700">Paystack</p>
+              <p className="text-xs text-green-600">Card / Bank / USSD</p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount ({currency})
+              Amount (₦ NGN)
             </label>
             <input
               type="number"
@@ -77,14 +81,14 @@ function TopUpModal({
             />
           </div>
           <div className="flex gap-2">
-            {[50, 100, 500, 1000].map((preset) => (
+            {[1000, 5000, 10000, 50000].map((preset) => (
               <button
                 key={preset}
                 type="button"
                 onClick={() => setAmount(String(preset))}
                 className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
               >
-                {CURRENCY_SYMBOLS[currency] || '$'}{preset}
+                ₦{preset.toLocaleString()}
               </button>
             ))}
           </div>
@@ -100,9 +104,9 @@ function TopUpModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 py-3 text-white rounded-lg font-semibold disabled:opacity-50 bg-green-600 hover:bg-green-700"
             >
-              {loading ? 'Processing...' : 'Top Up'}
+              {loading ? 'Processing...' : 'Pay with Paystack'}
             </button>
           </div>
         </form>

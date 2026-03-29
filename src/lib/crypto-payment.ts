@@ -78,10 +78,7 @@ export async function convertUsdToCrypto(
   crypto: CryptoId
 ): Promise<{ cryptoAmount: number; rate: number }> {
   if (!isConfigured) {
-    // Fallback demo rates when API key not set
-    const demoRates: Record<string, number> = { btc: 67500, eth: 3450, usdttrc20: 1, usdcerc20: 1 }
-    const rate = demoRates[crypto] || 1
-    return { cryptoAmount: parseFloat((amountUsd / rate).toFixed(8)), rate }
+    throw new Error('Crypto payments are not configured. Set NOWPAYMENTS_API_KEY in .env')
   }
 
   const data = await nowPaymentsRequest<{ estimated_amount: number }>(
@@ -111,22 +108,7 @@ export async function createCryptoPayment(request: CryptoPaymentRequest): Promis
   const cryptoInfo = SUPPORTED_CRYPTOS.find((c) => c.id === cryptoCurrency)!
 
   if (!isConfigured) {
-    // Demo mode fallback
-    logger.warn('NOWPayments not configured — using demo mode')
-    const { cryptoAmount, rate } = await convertUsdToCrypto(amountUsd, cryptoCurrency)
-    return {
-      id: `demo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      paymentId: null,
-      walletAddress: 'DEMO_MODE_NO_REAL_ADDRESS',
-      cryptoAmount,
-      cryptoCurrency,
-      amountUsd,
-      exchangeRate: rate,
-      network: cryptoInfo.network,
-      status: 'awaiting_payment',
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-      createdAt: new Date(),
-    }
+    throw new Error('Crypto payments are not configured. Set NOWPAYMENTS_API_KEY in .env')
   }
 
   // Create real payment via NOWPayments

@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // Validate wallet balance for outgoing transactions
     if (type === 'payment' || type === 'transfer' || type === 'withdrawal') {
       const wallet = await prisma.wallet.findUnique({ where: { userId: session.user.id } })
-      const fee = type === 'payment' ? amount * 0.015 : type === 'transfer' ? amount * 0.005 : 0
+      const fee = type === 'payment' ? amount * 0.01 : type === 'transfer' ? amount * 0.005 : 0
       if (!wallet || wallet.balance < amount + fee) {
         return NextResponse.json(
           { success: false, error: 'Insufficient balance' },
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const fee = type === 'payment' ? amount * 0.015 : type === 'transfer' ? amount * 0.005 : 0
+    const fee = type === 'payment' ? amount * 0.01 : type === 'transfer' ? amount * 0.005 : 0
 
     const transaction = await prisma.transaction.create({
       data: {

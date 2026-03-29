@@ -14,10 +14,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
-    "@paypal/checkout-server-sdk": "^1.0.3",
     "@prisma/client": "^6.19.2",
-    "@stripe/react-stripe-js": "^2.4.0",
-    "@stripe/stripe-js": "^2.1.0",
     "axios": "^1.6.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^2.30.0",
@@ -27,7 +24,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "resend": "^6.9.4",
-    "stripe": "^21.0.1",
     "swr": "^2.4.1",
     "zod": "^4.3.6"
   },

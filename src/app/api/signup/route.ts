@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { logger } from '@/lib/logger'
 import { signupSchema } from '@/lib/validations'
+import { notifyWelcome } from '@/lib/notifications'
 import { rateLimiters } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
@@ -52,13 +53,16 @@ export async function POST(request: NextRequest) {
         country: country || null,
         wallet: {
           create: {
-            balance: 5000, // Starting balance for demo
+            balance: 0,
             currency: 'USD',
           },
         },
       },
       include: { wallet: true },
     })
+
+    // Send welcome email (non-blocking)
+    notifyWelcome(user.email, user.name || 'there').catch(() => {})
 
     return NextResponse.json({
       success: true,

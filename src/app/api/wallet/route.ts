@@ -14,9 +14,20 @@ export async function GET() {
       )
     }
 
-    const wallet = await prisma.wallet.findUnique({
+    let wallet = await prisma.wallet.findUnique({
       where: { userId: session.user.id },
     })
+
+    // Auto-create wallet for users who signed up via OAuth (Google)
+    if (!wallet) {
+      wallet = await prisma.wallet.create({
+        data: {
+          userId: session.user.id,
+          balance: 0,
+          currency: 'USD',
+        },
+      })
+    }
 
     const transactions = await prisma.transaction.findMany({
       where: { userId: session.user.id },

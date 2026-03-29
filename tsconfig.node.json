@@ -8,5 +8,5 @@
     "moduleResolution": "bundler",
     "composite": true
   },
-  "include": ["next.config.mjs", "jest.config.ts"]
+  "include": ["next.config.mjs"]
 }

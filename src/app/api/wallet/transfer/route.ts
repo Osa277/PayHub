@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { transferSchema } from '@/lib/validations'
 import { rateLimiters } from '@/lib/rate-limit'
+import { notifyPaymentSent, notifyTransferReceived } from '@/lib/notifications'
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,6 +110,22 @@ export async function POST(req: NextRequest) {
 
       return senderTx
     })
+
+    // Send notifications to sender and recipient (non-blocking)
+    const sender = await prisma.user.findUnique({ where: { id: session.user.id } })
+    if (sender) {
+      notifyPaymentSent(sender.email, sender.phone, {
+        amount,
+        currency: 'USD',
+        recipient: recipient.name || recipientEmail,
+        txnId: result.id,
+      }).catch(() => {})
+    }
+    notifyTransferReceived(recipient.email, recipient.phone, {
+      amount,
+      currency: 'USD',
+      senderName: session.user.name || session.user.email || 'Someone',
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,

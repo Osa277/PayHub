@@ -37,6 +37,11 @@ yarn-error.log*
 *.swo
 *~
 
+# Generated/cached
+next-env.d.ts
+*.tsbuildinfo
+
 /generated/prisma
 prisma/*.db
 prisma/*.db-journal
+tsconfig.tsbuildinfo

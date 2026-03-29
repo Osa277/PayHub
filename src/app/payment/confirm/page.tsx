@@ -213,7 +213,7 @@ function ConfirmContent() {
             </div>
 
             <p className="text-center text-xs text-gray-400">
-              For demo purposes, enter any 4 digits
+              Enter your 4-digit transaction PIN
             </p>
 
             <div className="flex gap-3">

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { processPaymentSchema } from '@/lib/validations'
+import { notifyPaymentSent } from '@/lib/notifications'
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,6 +87,21 @@ export async function POST(req: NextRequest) {
     const updatedTransaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
     })
+
+    // Send payment notification (non-blocking)
+    const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+    if (user) {
+      notifyPaymentSent(
+        user.email,
+        user.phone,
+        {
+          amount: transaction.amount,
+          currency: transaction.currency,
+          recipient: transaction.recipientEmail || 'N/A',
+          txnId: transactionId,
+        }
+      ).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,

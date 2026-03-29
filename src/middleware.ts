@@ -13,7 +13,6 @@ const publicApiPaths = [
   '/api/auth',
   '/api/signup',
   '/api/webhooks',
-  '/api/exchange-rates',
   '/api/health',
 ]
 

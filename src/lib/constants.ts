@@ -43,9 +43,5 @@ export const TRANSACTION_STATUS = {
 
 export const API_ENDPOINTS = {
   PAYMENTS: '/api/payments',
-  USERS: '/api/users',
   TRANSACTIONS: '/api/transactions',
-  WALLETS: '/api/wallets',
-  INVOICES: '/api/invoices',
-  EXCHANGE_RATES: '/api/exchange-rates',
 }
