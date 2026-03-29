@@ -50,6 +50,11 @@ export const Navbar: React.FC = () => {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/crypto/wallets" className="text-gray-700 hover:text-blue-600 font-medium transition">
+                    Wallets
+                  </Link>
+                </li>
+                <li>
                   <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 font-medium transition">
                     Dashboard
                   </Link>
@@ -121,6 +126,9 @@ export const Navbar: React.FC = () => {
                   </Link>
                   <Link href="/crypto" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                     Crypto
+                  </Link>
+                  <Link href="/crypto/wallets" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
+                    Wallets
                   </Link>
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                     Dashboard
