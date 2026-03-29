@@ -20,11 +20,23 @@ export async function GET() {
 
     // Auto-create wallet for users who signed up via OAuth (Google)
     if (!wallet) {
+      // First verify user exists in database
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+      })
+
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        )
+      }
+
       wallet = await prisma.wallet.create({
         data: {
           userId: session.user.id,
           balance: 0,
-          currency: 'USD',
+          currency: 'NGN', // Default to NGN for Paystack
         },
       })
     }

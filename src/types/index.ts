@@ -49,6 +49,18 @@ export interface PaymentMethod {
   createdAt: Date
 }
 
+export interface BankAccount {
+  id: string
+  userId: string
+  accountNumber: string
+  bankCode: string
+  bankName: string
+  accountName: string
+  isDefault: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface Transaction {
   id: string
   userId: string

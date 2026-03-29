@@ -14,6 +14,7 @@ export const SUPPORTED_CURRENCIES = [
 ]
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
+  NGN: '₦',
   USD: '$',
   EUR: '€',
   GBP: '£',

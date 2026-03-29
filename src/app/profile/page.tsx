@@ -4,12 +4,15 @@ import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
 import { useApi } from '@/lib/hooks'
 import { useToast } from '@/components/Toast'
-import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOLS } from '@/lib/constants'
+import { CURRENCY_SYMBOLS } from '@/lib/constants'
 
-const CURRENCIES = SUPPORTED_CURRENCIES.map((code) => ({
-  code,
-  symbol: CURRENCY_SYMBOLS[code] || code,
-}))
+const CURRENCIES = [
+  { code: 'NGN', symbol: '₦' },
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'CAD', symbol: 'C$' },
+]
 
 const AVATARS = ['😊', '😎', '🤩', '🦊', '🐱', '🌟', '💎', '🚀', '🎯', '🔥', '🌈', '🦁']
 
@@ -34,7 +37,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('')
   const [phone, setPhone] = useState('')
   const [country, setCountry] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState('NGN') // Default to NGN (Paystack works in Africa)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
 
@@ -199,25 +202,34 @@ export default function ProfilePage() {
 
           {/* Currency */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Preferred Currency
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Preferred Currency <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {CURRENCIES.map((c) => (
+            <div className="grid grid-cols-5 gap-2">
+              {[
+                { code: 'NGN', symbol: '₦' },
+                { code: 'USD', symbol: '$' },
+                { code: 'EUR', symbol: '€' },
+                { code: 'GBP', symbol: '£' },
+                { code: 'CAD', symbol: 'C$' },
+              ].map((c) => (
                 <button
-                  type="button"
                   key={c.code}
+                  type="button"
                   onClick={() => setCurrency(c.code)}
-                  className={`p-2 rounded-lg text-sm font-medium transition ${
+                  className={`py-2 px-2 rounded-lg text-sm font-medium transition ${
                     currency === c.code
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-blue-600 text-white border-2 border-blue-600'
+                      : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
                   }`}
                 >
                   {c.symbol} {c.code}
                 </button>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              ₦ NGN recommended - Full Paystack support (Africa). Other currencies for international cards.
+            </p>
           </div>
 
           {/* Submit */}

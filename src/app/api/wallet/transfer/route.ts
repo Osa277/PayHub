@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { recipientEmail, amount, description } = parsed.data
+    const { recipientEmail, amount, description, currency } = parsed.data
 
     if (recipientEmail === session.user.email) {
       return NextResponse.json(
@@ -55,15 +55,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Get sender's wallet to check currency
+    const senderWallet = await prisma.wallet.findUnique({
+      where: { userId: session.user.id },
+    })
+
+    if (!senderWallet) {
+      return NextResponse.json(
+        { success: false, error: 'Your wallet not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if recipient has same currency wallet
+    if (recipient.wallet.currency !== senderWallet.currency) {
+      return NextResponse.json(
+        { success: false, error: `Recipient has a ${recipient.wallet.currency} wallet. You can only transfer ${senderWallet.currency} to ${senderWallet.currency} wallets.` },
+        { status: 400 }
+      )
+    }
+
     const fee = Math.round(amount * 0.005 * 100) / 100 // 0.5% transfer fee
     const totalDeduction = amount + fee
 
     const result = await prisma.$transaction(async (tx) => {
-      const senderWallet = await tx.wallet.findUnique({
+      const currentWallet = await tx.wallet.findUnique({
         where: { userId: session.user.id },
       })
 
-      if (!senderWallet || senderWallet.balance < totalDeduction) {
+      if (!currentWallet || currentWallet.balance < totalDeduction) {
         throw new Error('Insufficient balance')
       }
 
@@ -85,7 +105,7 @@ export async function POST(req: NextRequest) {
           userId: session.user.id,
           type: 'transfer',
           amount,
-          currency: senderWallet.currency,
+          currency: currentWallet.currency,
           status: 'completed',
           description: description || `Transfer to ${recipient.name || recipientEmail}`,
           recipientId: recipient.id,
@@ -101,7 +121,7 @@ export async function POST(req: NextRequest) {
           userId: recipient.id,
           type: 'deposit',
           amount,
-          currency: senderWallet.currency,
+          currency: currentWallet.currency,
           status: 'completed',
           description: `Transfer from ${session.user.name || session.user.email}`,
           fee: 0,
@@ -116,14 +136,14 @@ export async function POST(req: NextRequest) {
     if (sender) {
       notifyPaymentSent(sender.email, sender.phone, {
         amount,
-        currency: 'USD',
+        currency: senderWallet.currency,
         recipient: recipient.name || recipientEmail,
         txnId: result.id,
       }).catch(() => {})
     }
     notifyTransferReceived(recipient.email, recipient.phone, {
       amount,
-      currency: 'USD',
+      currency: senderWallet.currency,
       senderName: session.user.name || session.user.email || 'Someone',
     }).catch(() => {})
 

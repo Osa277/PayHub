@@ -6,6 +6,7 @@ export const signupSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   phone: z.string().max(20).optional().nullable(),
   country: z.string().max(100).optional().nullable(),
+  currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).default('NGN'), // Default to NGN for Paystack
 })
 
 export const loginSchema = z.object({
@@ -37,6 +38,7 @@ export const transferSchema = z.object({
   recipientEmail: z.string().email('Valid recipient email is required'),
   amount: z.number().positive('Amount must be greater than 0').max(100000),
   description: z.string().max(500).optional(),
+  currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).optional(),
 })
 
 export const topupSchema = z.object({
@@ -74,4 +76,17 @@ export const transactionCreateSchema = z.object({
   currency: z.string().min(1).max(10),
   description: z.string().max(500).optional(),
   recipientEmail: z.string().email().optional().nullable(),
+})
+
+export const bankAccountSchema = z.object({
+  accountNumber: z.string().min(8, 'Account number must be at least 8 digits').max(20),
+  bankCode: z.string().min(2, 'Bank code is required').max(10),
+  bankName: z.string().min(1, 'Bank name is required').max(100),
+  accountName: z.string().min(1, 'Account name is required').max(100),
+})
+
+export const withdrawalSchema = z.object({
+  amount: z.number().positive('Amount must be greater than 0').max(100000),
+  bankAccountId: z.string().min(1, 'Bank account is required'),
+  description: z.string().max(500).optional(),
 })

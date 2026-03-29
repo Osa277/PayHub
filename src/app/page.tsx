@@ -78,10 +78,10 @@ export default function Home() {
           {isAuthenticated ? (
             <>
               <a
-                href="/payment"
+                href="/crypto"
                 className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold transition"
               >
-                Send Money
+                Crypto Trading
               </a>
               <a
                 href="/wallet"

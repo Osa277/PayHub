@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    logger.info('Verifying payment', { reference, userId: session.user.id })
+
     // Find the payment session
     const paymentSession = await prisma.paymentSession.findFirst({
       where: {
@@ -31,7 +33,10 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    logger.info('Payment session lookup', { paymentSession, reference, userId: session.user.id })
+
     if (!paymentSession) {
+      logger.error('Payment session not found', { reference, userId: session.user.id })
       return NextResponse.json(
         { success: false, error: 'Payment session not found' },
         { status: 404 }
@@ -48,11 +53,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Verify with Paystack API
+    logger.info('Verifying with Paystack', { reference })
     const verification = await verifyPaystackPayment(reference)
+    logger.info('Paystack verification response', { verification })
 
     if (verification.data.status === 'success') {
-      // Credit the user's wallet
-      const amountInMajorUnit = verification.data.amount / 100
+      // Credit the user's wallet with original amount in their currency
+      const amountToCredit = paymentSession.amount
+
+      logger.info('Crediting wallet', { userId: session.user.id, amount: amountToCredit, currency: paymentSession.currency })
 
       await prisma.$transaction(async (tx) => {
         // Update payment session
@@ -61,10 +70,10 @@ export async function GET(req: NextRequest) {
           data: { status: 'completed' },
         })
 
-        // Credit wallet
+        // Credit wallet with original amount in user's currency
         await tx.wallet.update({
           where: { userId: session.user.id },
-          data: { balance: { increment: amountInMajorUnit } },
+          data: { balance: { increment: amountToCredit } },
         })
 
         // Record transaction
@@ -72,8 +81,8 @@ export async function GET(req: NextRequest) {
           data: {
             userId: session.user.id,
             type: 'deposit',
-            amount: amountInMajorUnit,
-            currency: verification.data.currency,
+            amount: amountToCredit,
+            currency: paymentSession.currency,
             status: 'completed',
             description: `Paystack top-up (${reference})`,
             fee: 0,
@@ -81,25 +90,31 @@ export async function GET(req: NextRequest) {
         })
       })
 
+      logger.info('Wallet credited successfully', { userId: session.user.id, amount: amountToCredit })
+
       return NextResponse.json({
         success: true,
-        data: { status: 'completed', amount: amountInMajorUnit },
+        data: { status: 'completed', amount: amountToCredit },
         message: 'Payment verified and wallet credited',
       })
     } else if (verification.data.status === 'failed') {
+      logger.warn('Payment failed', { reference })
       await prisma.paymentSession.update({
         where: { id: paymentSession.id },
         data: { status: 'failed' },
       })
 
-      return NextResponse.json({
-        success: false,
-        error: 'Payment failed',
-        data: { status: 'failed' },
-      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Payment failed',
+          data: { status: 'failed' },
+        }
+      )
     }
 
     // Still pending/abandoned
+    logger.info('Payment pending', { reference, status: verification.data.status })
     return NextResponse.json({
       success: true,
       data: { status: verification.data.status },

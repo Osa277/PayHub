@@ -45,8 +45,8 @@ export const Navbar: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/payment" className="text-gray-700 hover:text-blue-600 font-medium transition">
-                    Send Money
+                  <Link href="/crypto" className="text-gray-700 hover:text-blue-600 font-medium transition">
+                    Crypto
                   </Link>
                 </li>
                 <li>
@@ -119,8 +119,8 @@ export const Navbar: React.FC = () => {
                   <Link href="/wallet" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                     Wallet
                   </Link>
-                  <Link href="/payment" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
-                    Send Money
+                  <Link href="/crypto" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
+                    Crypto
                   </Link>
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                     Dashboard

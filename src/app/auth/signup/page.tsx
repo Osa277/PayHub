@@ -31,6 +31,7 @@ export default function SignupPage() {
     email: '',
     phone: '',
     country: '',
+    currency: 'NGN', // Default to NGN (Paystack works in Africa)
     password: '',
     confirmPassword: '',
     acceptTerms: false,
@@ -105,6 +106,7 @@ export default function SignupPage() {
           password: formData.password,
           phone: formData.phone || undefined,
           country: formData.country || undefined,
+          currency: formData.currency,
         }),
       })
 
@@ -258,6 +260,37 @@ export default function SignupPage() {
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
+                  Preferred Currency <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { code: 'NGN', symbol: '₦' },
+                    { code: 'USD', symbol: '$' },
+                    { code: 'EUR', symbol: '€' },
+                    { code: 'GBP', symbol: '£' },
+                    { code: 'CAD', symbol: 'C$' },
+                  ].map((curr) => (
+                    <button
+                      key={curr.code}
+                      type="button"
+                      onClick={() => updateField('currency', curr.code)}
+                      className={`py-2 px-2 rounded-lg font-medium transition text-sm ${
+                        formData.currency === curr.code
+                          ? 'bg-blue-600 text-white border-2 border-blue-600'
+                          : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {curr.symbol} {curr.code}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  ₦ NGN recommended - Full Paystack support (Africa). Other currencies for international cards.
+                </p>
               </div>
 
               <button

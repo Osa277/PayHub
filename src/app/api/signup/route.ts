@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, email, password, phone, country } = parsed.data
+    const { name, email, password, phone, country, currency } = parsed.data
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         wallet: {
           create: {
             balance: 0,
-            currency: 'USD',
+            currency: currency || 'USD',
           },
         },
       },

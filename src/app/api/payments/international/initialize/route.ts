@@ -9,16 +9,15 @@ import crypto from 'crypto'
 
 const initSchema = z.object({
   amount: z.number().positive('Amount must be greater than 0').max(50000),
-  currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).optional().default('NGN'),
+  currency: z.enum(['USD', 'EUR', 'GBP', 'CAD']),
 })
 
-// Simple exchange rates to NGN (update these based on current rates)
+// Exchange rates to NGN (update these periodically based on current rates)
 const EXCHANGE_RATES: Record<string, number> = {
-  'NGN': 1,
-  'USD': 1550, // 1 USD = ~1550 NGN
-  'EUR': 1700, // 1 EUR = ~1700 NGN
-  'GBP': 1950, // 1 GBP = ~1950 NGN
-  'CAD': 1150, // 1 CAD = ~1150 NGN
+  'USD': 1550,  // 1 USD = ~1550 NGN
+  'EUR': 1700,  // 1 EUR = ~1700 NGN
+  'GBP': 1950,  // 1 GBP = ~1950 NGN
+  'CAD': 1150,  // 1 CAD = ~1150 NGN
 }
 
 export async function POST(req: NextRequest) {
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     if (!isPaystackConfigured()) {
       return NextResponse.json(
-        { success: false, error: 'Paystack is not configured' },
+        { success: false, error: 'Payment service not configured' },
         { status: 503 }
       )
     }
@@ -47,72 +46,70 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const userCurrency = parsed.data.currency || 'NGN'
-    const userAmount = parsed.data.amount
+    const { amount, currency } = parsed.data
 
-    // Convert to NGN for Paystack (which only accepts NGN)
-    const exchangeRate = EXCHANGE_RATES[userCurrency] || 1
-    const amountInNGN = Math.round(userAmount * exchangeRate * 100) / 100 // Amount in NGN
+    // Convert to NGN for Paystack processing
+    const exchangeRate = EXCHANGE_RATES[currency] || 1
+    const amountInNGN = Math.round(amount * exchangeRate * 100) / 100
+    const amountInSmallestUnit = Math.round(amountInNGN * 100)
 
-    logger.info('Initializing Paystack payment', {
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const reference = `payhub_intl_${crypto.randomUUID()}`
+
+    logger.info('Initializing INTERNATIONAL payment', {
       userId: session.user.id,
-      userAmount,
-      userCurrency,
+      userAmount: amount,
+      userCurrency: currency,
       amountInNGN,
       exchangeRate,
     })
-
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const reference = `payhub_${crypto.randomUUID()}`
 
     // Create a pending payment session in the DB
     const paymentSession = await prisma.paymentSession.create({
       data: {
         userId: session.user.id,
-        amount: userAmount, // Store original amount in user's currency
-        currency: userCurrency, // Store user's currency
+        amount,
+        currency,
         paymentProvider: 'paystack',
         status: 'pending',
-        stripeSessionId: reference, // reuse the field for paystack reference
+        stripeSessionId: reference,
         redirectUrl: `${baseUrl}/wallet/paystack-callback?reference=${reference}`,
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     })
 
-    logger.info('Payment session created', { sessionId: paymentSession.id })
-
-    // Initialize with NGN amount for Paystack
     const paystackRes = await initializePaystackPayment({
       email: session.user.email,
-      amount: Math.round(amountInNGN * 100), // Convert to kobo for Paystack
+      amount: amountInSmallestUnit,
       currency: 'NGN',
       reference,
       callbackUrl: `${baseUrl}/wallet/paystack-callback?reference=${reference}`,
       metadata: {
         userId: session.user.id,
         paymentSessionId: paymentSession.id,
-        userCurrency,
-        userAmount,
-        purpose: 'wallet_topup',
+        userCurrency: currency,
+        userAmount: amount,
+        purpose: 'wallet_topup_international',
       },
     })
 
-    logger.info('Paystack initialization successful', { reference, amountInNGN })
+    logger.info('INTERNATIONAL payment initialized', { reference, amountInNGN })
 
     return NextResponse.json({
       success: true,
       data: {
         authorizationUrl: paystackRes.data.authorization_url,
-        accessCode: paystackRes.data.access_code,
         reference: paystackRes.data.reference,
         sessionId: paymentSession.id,
+        amountInNGN,
+        exchangeRate,
       },
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    logger.error('Paystack initialize error', { error: errorMessage, errorFull: error })
+    logger.error('International payment initialization error', { error: errorMessage })
     return NextResponse.json(
-      { success: false, error: `Failed to initialize payment: ${errorMessage}` },
+      { success: false, error: `Failed to initialize international payment: ${errorMessage}` },
       { status: 500 }
     )
   }
