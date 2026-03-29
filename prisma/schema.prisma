@@ -192,6 +192,9 @@ model CryptoWallet {
   btcBalance   Float    @default(0)
   ethBalance   Float    @default(0)
   usdtBalance  Float    @default(0)
+  btcAddress   String?  // Bitcoin receiving address
+  ethAddress   String?  // Ethereum/USDT address
+  usdtAddress  String?  // USDT address (usually same as ethAddress)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

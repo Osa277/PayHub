@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
+import { convertFiatToCrypto, getCryptoPrice } from '@/lib/crypto-rates'
 
 const buySchema = z.object({
   cryptocurrency: z.enum(['BTC', 'ETH', 'USDT']),
@@ -32,6 +33,17 @@ export async function POST(req: NextRequest) {
 
     const { cryptocurrency, fiatAmount, fiatCurrency } = parsed.data
 
+    // Get real exchange rate from CoinGecko
+    const exchangeRate = await getCryptoPrice(
+      cryptocurrency,
+      fiatCurrency.toLowerCase() as any
+    )
+    const cryptoAmount = await convertFiatToCrypto(
+      fiatAmount,
+      cryptocurrency,
+      fiatCurrency.toLowerCase() as any
+    )
+
     // Check if user has crypto wallet
     let cryptoWallet = await prisma.cryptoWallet.findUnique({
       where: { userId: session.user.id },
@@ -47,16 +59,6 @@ export async function POST(req: NextRequest) {
         },
       })
     }
-
-    // Mock exchange rates (in production, use live API)
-    const CRYPTO_RATES: Record<string, number> = {
-      BTC: 0.000015, // 1 NGN = 0.000015 BTC (example)
-      ETH: 0.0002,   // 1 NGN = 0.0002 ETH (example)
-      USDT: 0.0006,  // 1 NGN = 0.0006 USDT (example)
-    }
-
-    const exchangeRate = CRYPTO_RATES[cryptocurrency] || 0
-    const cryptoAmount = fiatAmount * exchangeRate
 
     // Create transaction
     const transaction = await prisma.cryptoTransaction.create({
@@ -84,15 +86,22 @@ export async function POST(req: NextRequest) {
       data: updateData,
     })
 
-    logger.info('Crypto bought', { userId: session.user.id, cryptocurrency, amount: cryptoAmount })
+    logger.info('Crypto bought', {
+      userId: session.user.id,
+      cryptocurrency,
+      amount: cryptoAmount,
+      fiatAmount,
+      exchangeRate,
+    })
 
     return NextResponse.json({
       success: true,
       data: {
         transaction,
         balance: (await prisma.cryptoWallet.findUnique({ where: { id: cryptoWallet.id } }))!,
+        exchangeRate,
       },
-      message: `Successfully bought ${cryptoAmount.toFixed(8)} ${cryptocurrency}`,
+      message: `Successfully bought ${cryptoAmount.toFixed(8)} ${cryptocurrency} at ${exchangeRate.toFixed(2)} ${fiatCurrency}/${cryptocurrency}`,
     })
   } catch (error) {
     logger.error('Crypto buy error', { error })
@@ -102,3 +111,4 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
