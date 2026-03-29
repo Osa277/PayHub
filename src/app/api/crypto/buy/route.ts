@@ -88,10 +88,12 @@ export async function POST(req: NextRequest) {
 
     logger.info('Crypto bought', {
       userId: session.user.id,
-      cryptocurrency,
-      amount: cryptoAmount,
-      fiatAmount,
-      exchangeRate,
+      context: {
+        cryptocurrency,
+        amount: cryptoAmount,
+        fiatAmount,
+        exchangeRate,
+      },
     })
 
     return NextResponse.json({

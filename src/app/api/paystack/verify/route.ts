@@ -23,7 +23,12 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    logger.info('Verifying payment', { reference, userId: session.user.id })
+    logger.info('Verifying payment', {
+      userId: session.user.id,
+      context: {
+        reference,
+      },
+    })
 
     // Find the payment session
     const paymentSession = await prisma.paymentSession.findFirst({
@@ -33,10 +38,10 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    logger.info('Payment session lookup', { paymentSession, reference, userId: session.user.id })
+    logger.info('Payment session lookup', { userId: session.user.id, context: { paymentSession, reference } })
 
     if (!paymentSession) {
-      logger.error('Payment session not found', { reference, userId: session.user.id })
+      logger.error('Payment session not found', { userId: session.user.id, context: { reference } })
       return NextResponse.json(
         { success: false, error: 'Payment session not found' },
         { status: 404 }
@@ -53,15 +58,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Verify with Paystack API
-    logger.info('Verifying with Paystack', { reference })
+    logger.info('Verifying with Paystack', { context: { reference } })
     const verification = await verifyPaystackPayment(reference)
-    logger.info('Paystack verification response', { verification })
+    logger.info('Paystack verification response', { context: { verification } })
 
     if (verification.data.status === 'success') {
       // Credit the user's wallet with original amount in their currency
       const amountToCredit = paymentSession.amount
 
-      logger.info('Crediting wallet', { userId: session.user.id, amount: amountToCredit, currency: paymentSession.currency })
+      logger.info('Crediting wallet', { userId: session.user.id, context: { amount: amountToCredit, currency: paymentSession.currency } })
 
       await prisma.$transaction(async (tx) => {
         // Update payment session
@@ -90,7 +95,7 @@ export async function GET(req: NextRequest) {
         })
       })
 
-      logger.info('Wallet credited successfully', { userId: session.user.id, amount: amountToCredit })
+      logger.info('Wallet credited successfully', { userId: session.user.id, context: { amount: amountToCredit } })
 
       return NextResponse.json({
         success: true,
@@ -98,7 +103,7 @@ export async function GET(req: NextRequest) {
         message: 'Payment verified and wallet credited',
       })
     } else if (verification.data.status === 'failed') {
-      logger.warn('Payment failed', { reference })
+      logger.warn('Payment failed', { context: { reference } })
       await prisma.paymentSession.update({
         where: { id: paymentSession.id },
         data: { status: 'failed' },
@@ -114,7 +119,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Still pending/abandoned
-    logger.info('Payment pending', { reference, status: verification.data.status })
+    logger.info('Payment pending', { context: { reference, status: verification.data.status } })
     return NextResponse.json({
       success: true,
       data: { status: verification.data.status },

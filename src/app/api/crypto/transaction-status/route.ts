@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const isTestnet = process.env.BLOCKCHAIN_TESTNET === 'true'
     const network = isTestnet ? 'testnet' : 'mainnet'
 
-    let blockchainStatus = { status: 'pending' as const, confirmations: 0 }
+    let blockchainStatus: { status: 'pending' | 'confirmed' | 'failed'; confirmations: number; blockHeight?: number } = { status: 'pending', confirmations: 0 }
 
     try {
       if (transaction.cryptocurrency === 'BTC') {
@@ -60,7 +60,12 @@ export async function GET(req: NextRequest) {
         })
       }
     } catch (error) {
-      logger.warn('Failed to fetch blockchain status', { error, transactionHash: transaction.transactionHash })
+      logger.warn('Failed to fetch blockchain status', {
+        error: error as Error,
+        context: {
+          transactionHash: transaction.transactionHash,
+        },
+      })
     }
 
     // Update transaction status if confirmed

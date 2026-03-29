@@ -56,10 +56,12 @@ export async function POST(req: NextRequest) {
 
     logger.info('Initializing Paystack payment', {
       userId: session.user.id,
-      userAmount,
-      userCurrency,
-      amountInNGN,
-      exchangeRate,
+      context: {
+        userAmount,
+        userCurrency,
+        amountInNGN,
+        exchangeRate,
+      },
     })
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
@@ -79,7 +81,11 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    logger.info('Payment session created', { sessionId: paymentSession.id })
+    logger.info('Payment session created', {
+      context: {
+        sessionId: paymentSession.id,
+      },
+    })
 
     // Initialize with NGN amount for Paystack
     const paystackRes = await initializePaystackPayment({
@@ -97,7 +103,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    logger.info('Paystack initialization successful', { reference, amountInNGN })
+    logger.info('Paystack initialization successful', {
+      context: {
+        reference,
+        amountInNGN,
+      },
+    })
 
     return NextResponse.json({
       success: true,
@@ -110,7 +121,9 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    logger.error('Paystack initialize error', { error: errorMessage, errorFull: error })
+    logger.error('Paystack initialize error', {
+      error: error as Error,
+    })
     return NextResponse.json(
       { success: false, error: `Failed to initialize payment: ${errorMessage}` },
       { status: 500 }

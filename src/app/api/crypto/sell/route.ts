@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       USDT: 'usdtBalance',
     }[cryptocurrency] as keyof typeof cryptoWallet
 
-    if (cryptoWallet[balanceKey] < cryptoAmount) {
+    const currentBalance = cryptoWallet[balanceKey] as number
+    if (currentBalance < cryptoAmount) {
       return NextResponse.json(
         { success: false, error: 'Insufficient crypto balance' },
         { status: 400 }
@@ -93,7 +94,13 @@ export async function POST(req: NextRequest) {
       data: updateData,
     })
 
-    logger.info('Crypto sold', { userId: session.user.id, cryptocurrency, amount: cryptoAmount })
+    logger.info('Crypto sold', {
+      userId: session.user.id,
+      context: {
+        cryptocurrency,
+        amount: cryptoAmount,
+      },
+    })
 
     return NextResponse.json({
       success: true,

@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: 'completed',
           metadata: {
-            ...transaction.metadata,
+            ...(((transaction.metadata || {}) as Record<string, any>)),
             transferReference: transferRes.data.reference,
             transferCode: transferRes.data.transfer_code,
           },
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: 'failed',
           metadata: {
-            ...transaction.metadata,
+            ...(((transaction.metadata || {}) as Record<string, any>)),
             error: paystackError.message,
           },
         },

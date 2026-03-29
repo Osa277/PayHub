@@ -58,10 +58,12 @@ export async function POST(req: NextRequest) {
 
     logger.info('Initializing INTERNATIONAL payment', {
       userId: session.user.id,
-      userAmount: amount,
-      userCurrency: currency,
-      amountInNGN,
-      exchangeRate,
+      context: {
+        userAmount: amount,
+        userCurrency: currency,
+        amountInNGN,
+        exchangeRate,
+      },
     })
 
     // Create a pending payment session in the DB
@@ -93,7 +95,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    logger.info('INTERNATIONAL payment initialized', { reference, amountInNGN })
+    logger.info('INTERNATIONAL payment initialized', {
+      context: {
+        reference,
+        amountInNGN,
+      },
+    })
 
     return NextResponse.json({
       success: true,

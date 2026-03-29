@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { AuthGuard } from '@/components/AuthGuard'
 import { useApi } from '@/lib/hooks'
 import { useToast } from '@/components/Toast'
@@ -15,7 +15,6 @@ const CRYPTO_SYMBOLS = {
 
 export default function CryptoPage() {
   const [tab, setTab] = useState<Tab>('buy')
-  const [activeTab, setActiveTab] = useState<Tab>('buy')
   const [crypto, setCrypto] = useState<CryptoType>('BTC')
   const [amount, setAmount] = useState('')
   const [recipientAddress, setRecipientAddress] = useState('')
@@ -26,8 +25,7 @@ export default function CryptoPage() {
   const { toast } = useToast()
 
   const walletData = useApi('/api/crypto/wallet')
-  const wallet = walletData?.data
-  const walletLoading = !walletData
+  const wallet = (walletData as any)?.data
 
   const handleBuy = async () => {
     setError('')

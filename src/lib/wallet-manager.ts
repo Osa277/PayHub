@@ -1,9 +1,9 @@
 import { logger } from './logger'
+import { ethers } from 'ethers'
 
 /**
  * Ethereum Wallet Manager
- * Uses JSON-RPC providers for transaction handling
- * Can be enhanced with ethers.js when available
+ * Real transaction broadcasting using ethers.js
  */
 
 type NetworkType = 'mainnet' | 'testnet'
@@ -24,21 +24,55 @@ const PROVIDERS = {
   },
 }
 
+// USDT contract address on Sepolia testnet
+const USDT_CONTRACT_ADDRESS = '0x7169D38eB5102C6f13322b1c31Ae63e38959A21a'
+
+// USDT ABI (simplified - just transfer method)
+const USDT_ABI = [
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function balanceOf(address account) view returns (uint256)',
+]
+
 /**
- * Create or retrieve an Ethereum wallet (basic implementation)
- * For production: use ethers.js or web3.js
+ * Get ethers.js provider for network
+ */
+function getEthersProvider(network: NetworkType) {
+  const url = PROVIDERS[network].ethereum
+  if (!url) {
+    throw new Error(`Provider URL not found for ${network}`)
+  }
+  return new ethers.JsonRpcProvider(url)
+}
+
+/**
+ * Create or retrieve an Ethereum wallet
  */
 export function createEthereumWallet(config: WalletConfig) {
   try {
-    // Generate a mock wallet address for now
-    // In production: use ethers.Wallet.createRandom() or from mnemonic
-    const mockAddress = '0x' + Math.random().toString(16).slice(2, 42).padEnd(40, '0')
-    const mockPrivateKey = '0x' + Math.random().toString(16).slice(2).padEnd(64, '0')
+    if (config.privateKey) {
+      const wallet = new ethers.Wallet(config.privateKey)
+      return {
+        address: wallet.address,
+        privateKey: config.privateKey,
+        mnemonic: undefined,
+      }
+    }
 
+    if (config.mnemonic) {
+      const wallet = ethers.Wallet.fromPhrase(config.mnemonic)
+      return {
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+        mnemonic: config.mnemonic,
+      }
+    }
+
+    // Generate random wallet
+    const wallet = ethers.Wallet.createRandom()
     return {
-      address: mockAddress,
-      privateKey: mockPrivateKey,
-      mnemonic: config.mnemonic || undefined,
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: wallet.mnemonic?.phrase,
     }
   } catch (error) {
     logger.error('Failed to create Ethereum wallet', { error })
@@ -47,19 +81,18 @@ export function createEthereumWallet(config: WalletConfig) {
 }
 
 /**
- * Get provider URL for network and chain
+ * Get provider URL for network
  */
-export function getProvider(network: NetworkType, chain: 'ethereum' = 'ethereum') {
-  const url = PROVIDERS[network]?.[chain as keyof typeof PROVIDERS['mainnet']]
+export function getProvider(network: NetworkType, _chain: string = 'ethereum') {
+  const url = PROVIDERS[network].ethereum
   if (!url) {
-    throw new Error(`Provider not found for ${network} ${chain}`)
+    throw new Error(`Provider not found for ${network}`)
   }
   return url
 }
 
 /**
- * Send Ethereum transaction
- * Uses JSON-RPC calls through the provider
+ * Send real Ethereum transaction on testnet/mainnet
  */
 export async function sendEthereumTransaction(params: {
   privateKey: string
@@ -79,60 +112,61 @@ export async function sendEthereumTransaction(params: {
     const { privateKey, toAddress, amount, network, gasLimit } = params
 
     // Validate address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(toAddress)) {
+    if (!ethers.isAddress(toAddress)) {
       throw new Error('Invalid Ethereum address format')
     }
 
-    const providerUrl = getProvider(network)
+    if (!privateKey || !privateKey.startsWith('0x')) {
+      throw new Error('Invalid private key format')
+    }
+
+    const provider = getEthersProvider(network)
+    const wallet = new ethers.Wallet(privateKey, provider)
+
+    // Convert ETH amount to wei
+    const amountWei = ethers.parseEther(amount)
 
     // Get current gas price
-    const gasRes = await fetch(providerUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_gasPrice',
-        params: [],
-        id: 1,
-      }),
+    const feeData = await provider.getFeeData()
+    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei')
+    const txGasLimit = BigInt(gasLimit || '21000')
+
+    // Calculate fee
+    const feeBN = gasPrice * txGasLimit
+    const feeETH = ethers.formatEther(feeBN)
+
+    logger.info('Ethereum transaction sending', {
+      context: {
+        from: wallet.address,
+        to: toAddress,
+        amount,
+        fee: feeETH,
+        network,
+      },
     })
 
-    if (!gasRes.ok) throw new Error('Failed to get gas price')
-
-    const gasData = await gasRes.json()
-    const gasPrice = gasData.result || '0x4a817c800' // fallback: 20 gwei
-
-    // Calculate fee (simple calculation: gasPrice * gasLimit / 1e18)
-    const txGasLimit = gasLimit || '21000'
-    const gasPriceBN = BigInt(gasPrice)
-    const gasLimitBN = BigInt(txGasLimit)
-    const feeBN = gasPriceBN * gasLimitBN
-    const feeETH = Number(feeBN) / 1e18
-
-    logger.info('Ethereum transaction prepared', {
+    // Create and send transaction
+    const tx = await wallet.sendTransaction({
       to: toAddress,
-      amount,
-      fee: feeETH.toFixed(8),
-      status: 'pending',
+      value: amountWei,
+      gasLimit: txGasLimit,
+      gasPrice: gasPrice,
     })
 
-    /**
-     * In production, use this flow:
-     * 1. Create transaction with ethers.js or web3.js
-     * 2. Sign with private key
-     * 3. Broadcast to network
-     * 4. Return transaction hash
-     *
-     * For now, return a mock transaction hash
-     */
-    const mockHash = '0x' + Math.random().toString(16).slice(2, 66)
+    logger.info('Ethereum transaction broadcast', {
+      context: {
+        hash: tx.hash,
+        from: wallet.address,
+        to: toAddress,
+      },
+    })
 
     return {
-      hash: mockHash,
-      from: '0x' + Math.random().toString(16).slice(2, 42).padEnd(40, '0'),
+      hash: tx.hash,
+      from: wallet.address,
       to: toAddress,
       amount,
-      fee: feeETH.toFixed(8),
+      fee: feeETH,
       status: 'pending',
     }
   } catch (error) {
@@ -147,7 +181,7 @@ export async function sendEthereumTransaction(params: {
 export async function sendUSDTTransaction(params: {
   privateKey: string
   toAddress: string
-  amount: string // in USDT (decimals: 6)
+  amount: string // in USDT (6 decimals)
   network: NetworkType
 }): Promise<{
   hash: string
@@ -161,49 +195,61 @@ export async function sendUSDTTransaction(params: {
     const { privateKey, toAddress, amount, network } = params
 
     // Validate address
-    if (!/^0x[a-fA-F0-9]{40}$/.test(toAddress)) {
+    if (!ethers.isAddress(toAddress)) {
       throw new Error('Invalid Ethereum address format')
     }
 
-    const providerUrl = getProvider(network)
+    if (!privateKey || !privateKey.startsWith('0x')) {
+      throw new Error('Invalid private key format')
+    }
 
-    // Get gas price for USDT transfer
-    const gasRes = await fetch(providerUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_gasPrice',
-        params: [],
-        id: 1,
-      }),
-    })
+    const provider = getEthersProvider(network)
+    const wallet = new ethers.Wallet(privateKey, provider)
 
-    if (!gasRes.ok) throw new Error('Failed to get gas price')
+    // Create USDT contract instance
+    const usdtContract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, wallet)
 
-    const gasData = await gasRes.json()
-    const gasPrice = gasData.result || '0x4a817c800'
+    // Convert USDT amount (6 decimals)
+    const amountUnits = ethers.parseUnits(amount, 6)
 
-    // USDT transfer typically uses ~65000 gas
+    // Estimate gas for USDT transfer
+    const feeData = await provider.getFeeData()
+    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei')
     const usdtGasLimit = 65000n
-    const gasPriceBN = BigInt(gasPrice)
-    const feeBN = gasPriceBN * usdtGasLimit
-    const feeETH = Number(feeBN) / 1e18
 
-    logger.info('USDT transaction prepared', {
-      to: toAddress,
-      amount,
-      fee: feeETH.toFixed(8),
+    const feeBN = gasPrice * BigInt(usdtGasLimit)
+    const feeETH = ethers.formatEther(feeBN)
+
+    logger.info('USDT transaction sending', {
+      context: {
+        from: wallet.address,
+        to: toAddress,
+        amount,
+        fee: feeETH,
+        network,
+      },
     })
 
-    const mockHash = '0x' + Math.random().toString(16).slice(2, 66)
+    // Send USDT transfer
+    const tx = await usdtContract.transfer(toAddress, amountUnits, {
+      gasLimit: usdtGasLimit,
+      gasPrice: gasPrice,
+    })
+
+    logger.info('USDT transaction broadcast', {
+      context: {
+        hash: tx.hash,
+        from: wallet.address,
+        to: toAddress,
+      },
+    })
 
     return {
-      hash: mockHash,
-      from: '0x' + Math.random().toString(16).slice(2, 42).padEnd(40, '0'),
+      hash: tx.hash,
+      from: wallet.address,
       to: toAddress,
       amount,
-      fee: feeETH.toFixed(8),
+      fee: feeETH,
       status: 'pending',
     }
   } catch (error) {
@@ -223,33 +269,26 @@ export async function getWalletBalance(params: {
   try {
     const { address, token = 'ETH', network } = params
 
-    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    if (!ethers.isAddress(address)) {
       throw new Error('Invalid address format')
     }
 
-    const providerUrl = getProvider(network)
+    const provider = getEthersProvider(network)
 
     if (token === 'ETH') {
       // Get ETH balance
-      const res = await fetch(providerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-          id: 1,
-        }),
-      })
-
-      if (!res.ok) throw new Error('Failed to fetch balance')
-
-      const data = await res.json()
-      const balanceWei = BigInt(data.result || '0')
-      return (Number(balanceWei) / 1e18).toString()
+      const balanceWei = await provider.getBalance(address)
+      return ethers.formatEther(balanceWei)
     }
 
-    throw new Error('USDT balance requires contract interaction')
+    if (token === 'USDT') {
+      // Get USDT balance
+      const usdtContract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, provider)
+      const balanceUnits = await usdtContract.balanceOf(address)
+      return ethers.formatUnits(balanceUnits, 6)
+    }
+
+    throw new Error(`Unknown token: ${token}`)
   } catch (error) {
     logger.error('Failed to get wallet balance', { error })
     throw error
@@ -268,36 +307,27 @@ export async function getTransactionStatus(params: {
 }> {
   try {
     const { hash, network } = params
-    const providerUrl = getProvider(network)
 
-    // Get transaction receipt
-    const res = await fetch(providerUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_getTransactionReceipt',
-        params: [hash],
-        id: 1,
-      }),
-    })
-
-    if (!res.ok) {
-      return { status: 'pending', confirmations: 0 }
+    if (!hash.startsWith('0x')) {
+      throw new Error('Invalid transaction hash format')
     }
 
-    const data = await res.json()
-    const receipt = data.result
+    const provider = getEthersProvider(network)
+
+    // Get transaction receipt
+    const receipt = await provider.getTransactionReceipt(hash)
 
     if (!receipt) {
       return { status: 'pending', confirmations: 0 }
     }
 
-    const status = receipt.status === '0x1' ? 'confirmed' : receipt.status === '0x0' ? 'failed' : 'pending'
+    const status = receipt.status === 1 ? 'confirmed' : receipt.status === 0 ? 'failed' : 'pending'
+    const currentBlock = await provider.getBlockNumber()
+    const confirmations = receipt.blockNumber ? currentBlock - receipt.blockNumber : 0
 
-    return { status, confirmations: receipt.blockNumber ? 1 : 0 }
+    return { status, confirmations }
   } catch (error) {
     logger.error('Failed to get transaction status', { error })
-    throw error
+    return { status: 'pending', confirmations: 0 }
   }
 }

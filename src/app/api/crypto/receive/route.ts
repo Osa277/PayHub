@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate mock address (in production, use blockchain API)
-    const generateAddress = (crypto: string, userId: string) => {
+    const generateAddress = (crypto: string) => {
       const chars = '0123456789abcdef'
       let addr = ''
       if (crypto === 'BTC') {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       return addr
     }
 
-    const address = generateAddress(cryptocurrency, session.user.id)
+    const address = generateAddress(cryptocurrency)
 
     // Check if address already exists
     const existing = await prisma.cryptoAddress.findFirst({
@@ -85,7 +85,17 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    logger.info('Crypto address generated', { userId: session.user.id, cryptocurrency, address })
+    if (!cryptoAddress) {
+      throw new Error('Failed to create or retrieve address')
+    }
+
+    logger.info('Crypto address generated', {
+      userId: session.user.id,
+      context: {
+        cryptocurrency,
+        address,
+      },
+    })
 
     return NextResponse.json({
       success: true,
@@ -106,7 +116,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

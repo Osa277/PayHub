@@ -1,7 +1,6 @@
 'use client'
 import React, { useState } from 'react'
 import { WalletDisplay } from '@/components/WalletDisplay'
-import { TransactionList } from '@/components/TransactionList'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Wallet, Transaction, BankAccount } from '@/types'
 import { useApi } from '@/lib/hooks'
@@ -571,11 +570,11 @@ export default function WalletPage() {
                   {/* Right: Amount & Status */}
                   <div className="text-right">
                     <p className={`font-bold text-sm ${
-                      tx.type === 'deposit' ? 'text-green-600' :
+                      tx.type === 'payment' ? 'text-green-600' :
                       tx.type === 'transfer' && tx.amount ? 'text-red-600' :
                       'text-blue-600'
                     }`}>
-                      {tx.type === 'deposit' || (tx.type === 'deposit') ? '+' : '-'}{CURRENCY_SYMBOLS[tx.currency || 'USD']}{tx.amount.toFixed(2)}
+                      {tx.type === 'payment' ? '+' : '-'}{CURRENCY_SYMBOLS[tx.currency || 'USD']}{tx.amount.toFixed(2)}
                     </p>
                     <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${
                       tx.status === 'completed' ? 'bg-green-100 text-green-700' :

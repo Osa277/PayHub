@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { recipientEmail, amount, description, currency } = parsed.data
+    const { recipientEmail, amount, description } = parsed.data
 
     if (recipientEmail === session.user.email) {
       return NextResponse.json(

@@ -4,15 +4,6 @@ import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/AuthGuard'
 import { useApi } from '@/lib/hooks'
 import { useToast } from '@/components/Toast'
-import { CURRENCY_SYMBOLS } from '@/lib/constants'
-
-const CURRENCIES = [
-  { code: 'NGN', symbol: '₦' },
-  { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'CAD', symbol: 'C$' },
-]
 
 const AVATARS = ['😊', '😎', '🤩', '🦊', '🐱', '🌟', '💎', '🚀', '🎯', '🔥', '🌈', '🦁']
 

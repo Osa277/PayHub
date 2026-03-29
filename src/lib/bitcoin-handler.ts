@@ -71,7 +71,7 @@ export async function getBitcoinFeeRate(params: {
   network: BitcoinNetwork
 }): Promise<number> {
   try {
-    const { priority, network } = params
+    const { priority } = params
 
     // Use Blockchair or Mempool API for fee rates
     const res = await fetch('https://mempool.space/api/v1/fees/recommended')
@@ -161,11 +161,13 @@ export async function createBitcoinTransaction(params: BitcoinTransactionParams)
     }
 
     logger.info('Bitcoin transaction prepared', {
-      from: fromAddress,
-      to: toAddress,
-      amount,
-      fee,
-      estimatedSize: txSize,
+      context: {
+        from: fromAddress,
+        to: toAddress,
+        amount,
+        fee,
+        estimatedSize: txSize,
+      },
     })
 
     /**

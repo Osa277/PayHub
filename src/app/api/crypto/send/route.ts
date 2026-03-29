@@ -19,7 +19,6 @@ const sendSchema = z.object({
   cryptocurrency: z.enum(['BTC', 'ETH', 'USDT']),
   amount: z.number().positive('Amount must be greater than 0'),
   recipientAddress: z.string().min(20, 'Invalid recipient address'),
-  description: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { cryptocurrency, amount, recipientAddress, description } = parsed.data
+    const { cryptocurrency, amount, recipientAddress } = parsed.data
 
     // Validate recipient address based on crypto type
     if (cryptocurrency === 'BTC' && !validateBitcoinAddress(recipientAddress)) {
@@ -81,7 +80,8 @@ export async function POST(req: NextRequest) {
       USDT: 'usdtBalance',
     }[cryptocurrency] as keyof typeof cryptoWallet
 
-    if (cryptoWallet[balanceKey] < amount) {
+    const currentBalance = cryptoWallet[balanceKey] as number
+    if (currentBalance < amount) {
       return NextResponse.json(
         { success: false, error: 'Insufficient crypto balance' },
         { status: 400 }
@@ -110,39 +110,62 @@ export async function POST(req: NextRequest) {
     let blockchainHash = ''
 
     try {
-      // Attempt real blockchain transaction
-      const isTestnet = process.env.BLOCKCHAIN_TESTNET === 'true'
-      const network = isTestnet ? 'testnet' : 'mainnet'
+      // Check if private key is configured
+      const privateKey = process.env.ETHEREUM_PRIVATE_KEY
+      if (!privateKey || privateKey === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+        logger.warn('Private key not configured for blockchain transaction')
+        blockchainHash = '' // Will record as pending
+      } else {
+        // Attempt real blockchain transaction
+        const isTestnet = process.env.BLOCKCHAIN_TESTNET === 'true'
+        const network = isTestnet ? 'testnet' : 'mainnet'
 
-      if (cryptocurrency === 'BTC') {
-        const btcTx = await createBitcoinTransaction({
-          fromAddress: cryptoWallet.btcAddress || '',
-          toAddress: recipientAddress,
-          amount,
-          feeRate: 30,
-          network: network as 'mainnet' | 'testnet',
-        })
-        blockchainHash = btcTx.hash
-      } else if (cryptocurrency === 'ETH') {
-        const ethTx = await sendEthereumTransaction({
-          privateKey: process.env.ETHEREUM_PRIVATE_KEY || '',
-          toAddress: recipientAddress,
-          amount: amount.toString(),
-          network: network as 'mainnet' | 'testnet',
-        })
-        blockchainHash = ethTx.hash
-      } else if (cryptocurrency === 'USDT') {
-        const usdtTx = await sendUSDTTransaction({
-          privateKey: process.env.ETHEREUM_PRIVATE_KEY || '',
-          toAddress: recipientAddress,
-          amount: amount.toString(),
-          network: network as 'mainnet' | 'testnet',
-        })
-        blockchainHash = usdtTx.hash
+        if (cryptocurrency === 'BTC') {
+          const btcTx = await createBitcoinTransaction({
+            fromAddress: cryptoWallet.btcAddress || '',
+            toAddress: recipientAddress,
+            amount,
+            feeRate: 30,
+            network: network as 'mainnet' | 'testnet',
+          })
+          blockchainHash = btcTx.hash
+        } else if (cryptocurrency === 'ETH') {
+          const ethTx = await sendEthereumTransaction({
+            privateKey,
+            toAddress: recipientAddress,
+            amount: amount.toString(),
+            network: network as 'mainnet' | 'testnet',
+          })
+          blockchainHash = ethTx.hash
+        } else if (cryptocurrency === 'USDT') {
+          const usdtTx = await sendUSDTTransaction({
+            privateKey,
+            toAddress: recipientAddress,
+            amount: amount.toString(),
+            network: network as 'mainnet' | 'testnet',
+          })
+          blockchainHash = usdtTx.hash
+        }
       }
     } catch (blockchainError) {
-      logger.warn('Blockchain transaction failed, recording as pending', { blockchainError })
+      logger.warn('Blockchain transaction failed, recording as pending', {
+        context: {
+          error: (blockchainError as Error).message,
+        },
+      })
       // Continue to create transaction record with pending status
+    }
+
+    // Get current exchange rate for transaction record
+    let exchangeRate = 0
+    let fiatAmount = 0
+    try {
+      const rate = await getCryptoPrice(cryptocurrency, 'usd')
+      exchangeRate = rate
+      fiatAmount = amount * rate
+    } catch {
+      exchangeRate = 0
+      fiatAmount = 0
     }
 
     // Create transaction
@@ -153,11 +176,13 @@ export async function POST(req: NextRequest) {
         type: 'send',
         cryptocurrency,
         amount,
+        fiatAmount,
+        exchangeRate,
+        fiatCurrency: 'USD',
         toAddress: recipientAddress,
         fee,
         status: 'pending',
         transactionHash: blockchainHash || undefined,
-        description: description || `Send ${cryptocurrency} to ${recipientAddress.slice(0, 10)}...`,
       },
     })
 
@@ -174,11 +199,13 @@ export async function POST(req: NextRequest) {
 
     logger.info('Crypto send initiated', {
       userId: session.user.id,
-      cryptocurrency,
-      amount,
-      fee,
-      recipientAddress,
-      transactionId: transaction.id,
+      context: {
+        cryptocurrency,
+        amount,
+        fee,
+        recipientAddress,
+        transactionId: transaction.id,
+      },
     })
 
     return NextResponse.json({

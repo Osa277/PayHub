@@ -47,8 +47,10 @@ export async function POST(req: NextRequest) {
 
     logger.info('Initializing LOCAL payment (NGN)', {
       userId: session.user.id,
-      amount,
-      currency: 'NGN',
+      context: {
+        amount,
+        currency: 'NGN',
+      },
     })
 
     // Create a pending payment session in the DB
@@ -78,7 +80,11 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    logger.info('LOCAL payment initialized', { reference })
+    logger.info('LOCAL payment initialized', {
+      context: {
+        reference,
+      },
+    })
 
     return NextResponse.json({
       success: true,

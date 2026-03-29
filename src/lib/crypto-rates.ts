@@ -52,7 +52,11 @@ export async function getExchangeRates() {
   const data = await fetchFromCoinGecko()
   rateCache = { data, timestamp: now }
 
-  logger.info('Exchange rates updated', { timestamp: now })
+  logger.info('Exchange rates updated', {
+    context: {
+      timestamp: now,
+    },
+  })
   return data
 }
 
