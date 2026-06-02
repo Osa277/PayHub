@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email (non-blocking)
     notifyWelcome(user.email, user.name || 'there').catch((error) => {
-      logger.warn('Failed to send welcome email', { error, email: user.email })
+      logger.warn('Failed to send welcome email', { error })
     })
 
     // Generate verification token and send verification email
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       },
     })
     sendVerificationEmail(user.email, verificationToken).catch((error) => {
-      logger.error('Failed to send verification email', { error, email: user.email })
+      logger.error('Failed to send verification email', { error })
     })
 
     return NextResponse.json(

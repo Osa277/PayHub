@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -15,9 +15,8 @@ interface BankAccount {
 }
 
 export default function BankAccountsPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
-  const toastRef = useRef<((msg: string, type?: 'success' | 'error') => void) | null>(null)
   
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [isLoading, setIsLoading] = useState(true)
