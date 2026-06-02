@@ -38,13 +38,13 @@ export function PaymentConfirmationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="payment-confirm-title" onClick={(e) => { if (e.target === e.currentTarget) onCancel() }} onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}>
       <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4">
         {/* Header */}
         <div
           className={`px-6 py-4 border-b ${isDangerous ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}
         >
-          <h2 className={`text-lg font-bold ${isDangerous ? 'text-red-900' : 'text-blue-900'}`}>
+          <h2 id="payment-confirm-title" className={`text-lg font-bold ${isDangerous ? 'text-red-900' : 'text-black'}`}>
             {isDangerous ? '⚠️ ' : ''}
             {title}
           </h2>
@@ -52,28 +52,28 @@ export function PaymentConfirmationModal({
 
         {/* Content */}
         <div className="px-6 py-4 space-y-4">
-          <p className="text-gray-700 text-sm">{message}</p>
+          <p className="text-black text-sm">{message}</p>
 
           {/* Amount Summary */}
-          <div className={`p-4 rounded-lg ${isDangerous ? 'bg-red-50' : 'bg-gray-50'}`}>
+          <div className={`p-4 rounded-lg ${isDangerous ? 'bg-red-50' : 'bg-blue-50'}`}>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-600">Amount:</span>
-              <span className="font-bold text-gray-900">
+              <span className="text-black">Amount:</span>
+              <span className="font-bold text-black">
                 {amount} {currency}
               </span>
             </div>
 
             {fee && (
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600">Network Fee:</span>
-                <span className="text-gray-700">{fee} {currency}</span>
+                <span className="text-black">Network Fee:</span>
+                <span className="text-black">{fee} {currency}</span>
               </div>
             )}
 
             {total && (
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span className="font-bold text-gray-900">Total:</span>
-                <span className="font-bold text-lg text-gray-900">{total} {currency}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-blue-100">
+                <span className="font-bold text-black">Total:</span>
+                <span className="font-bold text-lg text-black">{total} {currency}</span>
               </div>
             )}
           </div>
@@ -95,7 +95,7 @@ export function PaymentConfirmationModal({
                 onChange={(e) => setCheckbox(e.target.checked)}
                 className="mt-1"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-black">
                 I understand this is irreversible and confirm the recipient address is correct
               </span>
             </label>
@@ -103,11 +103,11 @@ export function PaymentConfirmationModal({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex gap-2">
+        <div className="px-6 py-4 bg-blue-50 border-t flex gap-2">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 disabled:opacity-50 font-medium"
+            className="flex-1 px-4 py-2 bg-white text-black border border-blue-900 rounded-lg hover:bg-blue-50 disabled:opacity-50 font-medium"
           >
             {cancelText}
           </button>
@@ -124,7 +124,7 @@ export function PaymentConfirmationModal({
             className={`flex-1 px-4 py-2 text-white rounded-lg disabled:opacity-50 font-medium transition-colors ${
               isDangerous
                 ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300'
-                : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'
+                : 'bg-blue-900 hover:bg-blue-950 disabled:bg-blue-300'
             }`}
           >
             {isLoading ? 'Processing...' : confirmText}

@@ -20,13 +20,13 @@ function ResetPasswordForm() {
       <div className="min-h-[80vh] flex items-center justify-center">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
           <div className="text-5xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h1>
-          <p className="text-gray-500 mb-6">
+          <h1 className="text-2xl font-bold text-black mb-2">Invalid Link</h1>
+          <p className="text-black mb-6">
             This password reset link is invalid or has expired.
           </p>
           <Link
             href="/auth/forgot-password"
-            className="text-blue-600 font-semibold hover:text-blue-700"
+            className="text-blue-900 font-semibold hover:text-blue-950"
           >
             Request a new reset link
           </Link>
@@ -77,15 +77,15 @@ function ResetPasswordForm() {
             <>
               <div className="text-center mb-8">
                 <div className="text-4xl mb-3">🔑</div>
-                <h1 className="text-2xl font-bold text-gray-900">New Password</h1>
-                <p className="text-gray-500 mt-1">
+                <h1 className="text-2xl font-bold text-black">New Password</h1>
+                <p className="text-black mt-1">
                   Enter your new password for <strong>{email}</strong>
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="new-password" className="block text-sm font-medium text-black mb-1">
                     New Password
                   </label>
                   <input
@@ -95,13 +95,13 @@ function ResetPasswordForm() {
                     minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                     placeholder="At least 8 characters"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-black mb-1">
                     Confirm Password
                   </label>
                   <input
@@ -110,7 +110,7 @@ function ResetPasswordForm() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                     placeholder="Re-enter password"
                   />
                 </div>
@@ -122,7 +122,7 @@ function ResetPasswordForm() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isLoading ? 'Resetting...' : 'Reset Password'}
                 </button>
@@ -131,11 +131,11 @@ function ResetPasswordForm() {
           ) : (
             <div className="text-center py-6">
               <div className="text-5xl mb-4">✅</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset</h2>
-              <p className="text-gray-500 mb-4">
+              <h2 className="text-2xl font-bold text-black mb-2">Password Reset</h2>
+              <p className="text-black mb-4">
                 Your password has been updated successfully.
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-black/60">
                 Redirecting to login...
               </p>
             </div>

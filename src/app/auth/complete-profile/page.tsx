@@ -3,18 +3,11 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
-import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOLS } from '@/lib/constants'
-
-const CURRENCIES = SUPPORTED_CURRENCIES.map((code) => ({
-  code,
-  symbol: CURRENCY_SYMBOLS[code] || code,
-}))
-
 export default function CompleteProfilePage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const user = session?.user
-  const [preferredCurrency, setPreferredCurrency] = useState('USD')
+  const [preferredCurrency] = useState('NGN')
   const [avatar, setAvatar] = useState('')
   const [bio, setBio] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -59,15 +52,15 @@ export default function CompleteProfilePage() {
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600 mx-auto mb-4">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-900 mx-auto mb-4">
               {avatar ? (
                 <span className="text-3xl">{avatar}</span>
               ) : (
                 initials
               )}
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Complete Your Profile</h1>
-            <p className="text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-black">Complete Your Profile</h1>
+            <p className="text-black mt-1">
               Welcome, {user?.name}! Set up your preferences.
             </p>
           </div>
@@ -78,10 +71,22 @@ export default function CompleteProfilePage() {
             Account created successfully! Customize your experience below.
           </div>
 
+          {/* Email Verification Reminder */}
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm">
+            <p className="font-semibold mb-1">📧 Verify Your Email</p>
+            <p className="mb-3">Please check your email for a verification link. You&apos;ll need to verify your email to perform financial transactions.</p>
+            <a
+              href="/auth/resend-verification"
+              className="text-amber-900 font-semibold hover:text-amber-950 underline"
+            >
+              Didn&apos;t receive it? Get a new link
+            </a>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Avatar Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Choose an Avatar
               </label>
               <div className="flex flex-wrap gap-3">
@@ -92,8 +97,8 @@ export default function CompleteProfilePage() {
                     onClick={() => setAvatar(emoji)}
                     className={`w-12 h-12 rounded-full text-2xl flex items-center justify-center border-2 transition ${
                       avatar === emoji
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-blue-900 bg-blue-50'
+                        : 'border-blue-200 hover:border-blue-300'
                     }`}
                   >
                     {emoji}
@@ -104,27 +109,19 @@ export default function CompleteProfilePage() {
 
             {/* Preferred Currency */}
             <div>
-              <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Currency
+              <label className="block text-sm font-medium text-black mb-1">
+                Wallet Currency
               </label>
-              <select
-                id="currency"
-                value={preferredCurrency}
-                onChange={(e) => setPreferredCurrency(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.symbol} {c.code}
-                  </option>
-                ))}
-              </select>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-blue-900">₦ NGN (Nigerian Naira)</p>
+                <p className="text-xs text-blue-700 mt-1">All transactions are processed in Naira via Paystack</p>
+              </div>
             </div>
 
             {/* Bio */}
             <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                Short Bio <span className="text-gray-400">(optional)</span>
+              <label htmlFor="bio" className="block text-sm font-medium text-black mb-1">
+                Short Bio <span className="text-black/60">(optional)</span>
               </label>
               <textarea
                 id="bio"
@@ -132,34 +129,34 @@ export default function CompleteProfilePage() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 maxLength={200}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition resize-none"
                 placeholder="Tell us a bit about yourself..."
               />
-              <p className="text-xs text-gray-400 mt-1">{bio.length}/200 characters</p>
+              <p className="text-xs text-black/60 mt-1">{bio.length}/200 characters</p>
             </div>
 
             {/* Account Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700">Account Summary</h3>
+            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-semibold text-black">Account Summary</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-gray-500">Name:</span>
-                <span className="text-gray-900 font-medium">{user?.name}</span>
-                <span className="text-gray-500">Email:</span>
-                <span className="text-gray-900 font-medium">{user?.email}</span>
+                <span className="text-black">Name:</span>
+                <span className="text-black font-medium">{user?.name}</span>
+                <span className="text-black">Email:</span>
+                <span className="text-black font-medium">{user?.email}</span>
                 {user?.phone && (
                   <>
-                    <span className="text-gray-500">Phone:</span>
-                    <span className="text-gray-900 font-medium">{user.phone}</span>
+                    <span className="text-black">Phone:</span>
+                    <span className="text-black font-medium">{user.phone}</span>
                   </>
                 )}
                 {user?.country && (
                   <>
-                    <span className="text-gray-500">Country:</span>
-                    <span className="text-gray-900 font-medium">{user.country}</span>
+                    <span className="text-black">Country:</span>
+                    <span className="text-black font-medium">{user.country}</span>
                   </>
                 )}
-                <span className="text-gray-500">Currency:</span>
-                <span className="text-gray-900 font-medium">{preferredCurrency}</span>
+                <span className="text-black">Currency:</span>
+                <span className="text-black font-medium">{preferredCurrency}</span>
               </div>
             </div>
 
@@ -168,14 +165,14 @@ export default function CompleteProfilePage() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
+                className="flex-1 bg-blue-50 text-black py-3 rounded-lg font-semibold hover:bg-blue-100 transition"
               >
                 Skip for Now
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
+                className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 transition"
               >
                 {isLoading ? 'Saving...' : 'Complete Setup'}
               </button>

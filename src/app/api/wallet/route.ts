@@ -14,72 +14,59 @@ export async function GET() {
       )
     }
 
-    let wallet = await prisma.wallet.findUnique({
-      where: { userId: session.user.id },
-    })
-
-    // Auto-create wallet for users who signed up via OAuth (Google)
-    if (!wallet) {
-      // First verify user exists in database
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-      })
-
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: 'User not found' },
-          { status: 404 }
-        )
-      }
-
-      wallet = await prisma.wallet.create({
-        data: {
+    // OPTIMIZED: Use upsert to create wallet if missing (1 query instead of 3)
+    const [wallet, transactions] = await Promise.all([
+      prisma.wallet.upsert({
+        where: { userId: session.user.id },
+        update: {},
+        create: {
           userId: session.user.id,
           balance: 0,
-          currency: 'NGN', // Default to NGN for Paystack
+          currency: 'NGN',
         },
-      })
+      }),
+      prisma.transaction.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+    ])
+
+    // Format wallet for the frontend types (convert Decimal to number)
+    const formattedWallet = {
+      id: wallet.id,
+      userId: wallet.userId,
+      balance: Number(wallet.balance),
+      currency: wallet.currency,
+      transactions: [],
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt,
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    })
-
-    // Format wallet for the frontend types
-    const formattedWallet = wallet
-      ? {
-          id: wallet.id,
-          userId: wallet.userId,
-          balance: wallet.balance,
-          currency: wallet.currency,
-          transactions: [],
-          createdAt: wallet.createdAt,
-          updatedAt: wallet.updatedAt,
-        }
-      : null
-
-    // Format transactions for the frontend types
+    // Format transactions for the frontend types (convert Decimal to number)
     const formattedTransactions = transactions.map((t) => ({
       id: t.id,
       userId: t.userId,
       type: t.type,
-      amount: t.amount,
+      amount: Number(t.amount),
       currency: t.currency,
       status: t.status,
       description: t.description,
+      fee: Number(t.fee || 0),
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
     }))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         wallet: formattedWallet,
         transactions: formattedTransactions,
       },
     })
+
+    response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30')
+    return response
   } catch (error) {
     logger.error('Wallet fetch error', { error })
     return NextResponse.json(

@@ -4,7 +4,7 @@ const PAYSTACK_BASE_URL = 'https://api.paystack.co'
 export interface PaystackInitializeParams {
   email: string
   amount: number // in kobo/cents (e.g. 5000 = ₦50.00 or $50.00)
-  currency?: 'NGN' | 'GHS' | 'ZAR' | 'USD'
+  currency?: 'NGN'
   reference?: string
   callbackUrl?: string
   metadata?: Record<string, unknown>

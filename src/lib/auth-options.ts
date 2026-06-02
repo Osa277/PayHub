@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { rateLimiters } from '@/lib/rate-limit'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
@@ -19,7 +20,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
+      allowDangerousEmailAccountLinking: false,
       httpOptions: {
         timeout: 10000, // 10 seconds for Google API calls
       },
@@ -30,9 +31,16 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email and password are required')
+        }
+
+        // Rate limit login attempts by IP
+        const ip = req?.headers?.['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown'
+        const { success: allowed } = rateLimiters.login(ip)
+        if (!allowed) {
+          throw new Error('Too many login attempts. Please try again later.')
         }
 
         const user = await prisma.user.findUnique({
@@ -63,6 +71,12 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.name = user.name
         token.email = user.email
+        // Load isVerified on first sign-in
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { isVerified: true },
+        })
+        token.isVerified = dbUser?.isVerified ?? false
       }
       // On explicit refresh, reload user data from DB
       if (trigger === 'update') {
@@ -78,7 +92,7 @@ export const authOptions: NextAuthOptions = {
           token.avatar = dbUser.avatar
           token.isVerified = dbUser.isVerified
           token.walletBalance = dbUser.wallet?.balance ?? 0
-          token.currency = dbUser.wallet?.currency ?? 'USD'
+          token.currency = dbUser.wallet?.currency ?? 'NGN'
         }
       }
       return token
@@ -94,7 +108,7 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as Record<string, unknown>).avatar = token.avatar ?? null
         ;(session.user as Record<string, unknown>).isVerified = token.isVerified ?? false
         ;(session.user as Record<string, unknown>).walletBalance = token.walletBalance ?? 0
-        ;(session.user as Record<string, unknown>).currency = token.currency ?? 'USD'
+        ;(session.user as Record<string, unknown>).currency = token.currency ?? 'NGN'
       }
       return session
     },
@@ -106,7 +120,7 @@ export const authOptions: NextAuthOptions = {
         data: {
           userId: user.id,
           balance: 0,
-          currency: 'USD',
+          currency: 'NGN',
         },
       })
     },

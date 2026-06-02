@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -20,6 +21,7 @@ model User {
   country        String?
   avatar         String?
   bio            String?
+  transactionPin String?   // Hashed 4-digit PIN for payment confirmation
   isVerified     Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -32,10 +34,7 @@ model User {
   paymentMethods      PaymentMethod[]
   paymentSessions     PaymentSession[]
   bankAccounts        BankAccount[]
-  cryptoWallet        CryptoWallet?
-  cryptoTransactions  CryptoTransaction[]
-  cryptoAddresses     CryptoAddress[]
-  blockchainWallets   BlockchainWallet[]
+  // Crypto fields removed for Paystack-only
 }
 
 model Account {
@@ -79,8 +78,8 @@ model VerificationToken {
 model Wallet {
   id        String   @id @default(cuid())
   userId    String   @unique
-  balance   Float    @default(0)
-  currency  String   @default("USD")
+  balance   Decimal  @default(0) @db.Decimal(18, 8)
+  currency  String   @default("NGN")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -91,14 +90,14 @@ model Transaction {
   id              String   @id @default(cuid())
   userId          String
   type            String   // payment, transfer, deposit, withdrawal
-  amount          Float
-  currency        String   @default("USD")
+  amount          Decimal  @db.Decimal(18, 8)
+  currency        String   @default("NGN")
   status          String   @default("pending") // pending, completed, failed
   description     String
   recipientId     String?
   recipientName   String?
   recipientEmail  String?
-  fee             Float    @default(0)
+  fee             Decimal  @default(0) @db.Decimal(18, 8)
   paymentMethodId String?
   bankAccountId   String?
   metadata        Json?
@@ -111,13 +110,14 @@ model Transaction {
   invoice       Invoice?
 
   @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
+  @@index([userId, status])
+  @@index([status, createdAt(sort: Desc)])
 }
 
 model PaymentMethod {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // crypto
+  type      String   // paystack
   stripeId  String?
   paypalId  String?
   last4     String?
@@ -132,29 +132,39 @@ model PaymentMethod {
 }
 
 model Invoice {
-  id            String   @id @default(cuid())
-  userId        String
-  transactionId String   @unique
-  amount        Float
-  currency      String   @default("USD")
-  status        String   @default("draft") // draft, sent, paid, overdue
-  items         Json
-  dueDate       DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  transactionId  String   @unique
+  amount         Decimal  @db.Decimal(18, 8)
+  currency       String   @default("NGN")
+  status         String   @default("draft") // draft, sent, paid, overdue
+  recipientEmail String?
+  recipientName  String?
+  items          Json
+  dueDate        DateTime
+  isRecurring       Boolean  @default(false)
+  recurrencePattern String?  // daily, weekly, monthly, yearly
+  recurrenceInterval Int     @default(1) // every N periods
+  nextDueDate       DateTime?
+  lastSentAt        DateTime?
+  parentInvoiceId   String?  // links child invoices to their recurring parent
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   transaction Transaction @relation(fields: [transactionId], references: [id])
 
-  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, status])
+  @@index([isRecurring, nextDueDate, status])
 }
 
 model PaymentSession {
   id              String   @id @default(cuid())
   userId          String
-  amount          Float
-  currency        String   @default("USD")
-  paymentProvider String   // crypto
+  amount          Decimal  @db.Decimal(18, 8)
+  currency        String   @default("NGN")
+  paymentProvider String   // paystack
   status          String   @default("pending") // pending, completed, failed, cancelled
   stripeSessionId String?  @unique
   redirectUrl     String?
@@ -185,89 +195,3 @@ model BankAccount {
   @@index([userId])
 }
 
-// ─── Crypto Models ───
-
-model BlockchainWallet {
-  id                  String   @id @default(cuid())
-  userId              String
-  name                String   // "My Main Wallet", "Trading Bot", etc
-  cryptocurrency      String   // BTC, ETH, USDT (can be stored as JSON for multi-crypto)
-  address             String   // Public receiving address
-  encryptedPrivateKey String?  // Encrypted private key (null if view-only)
-  encryptedMnemonic   String?  // Encrypted seed phrase (for recovery)
-  isActive            Boolean  @default(false)  // Currently selected wallet
-  isViewOnly          Boolean  @default(false)  // Can't send (no private key)
-  source              String   @default("generated") // generated, imported, hardware
-  metadata            Json?    // Custom data (e.g., hardware wallet info)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions        CryptoTransaction[]
-
-  @@unique([userId, address])
-  @@index([userId])
-  @@index([isActive])
-}
-
-model CryptoWallet {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  btcBalance   Float    @default(0)
-  ethBalance   Float    @default(0)
-  usdtBalance  Float    @default(0)
-  btcAddress   String?  // Bitcoin receiving address (deprecated, use BlockchainWallet)
-  ethAddress   String?  // Ethereum/USDT address (deprecated, use BlockchainWallet)
-  usdtAddress  String?  // USDT address (deprecated, use BlockchainWallet)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cryptoTransactions CryptoTransaction[]
-  cryptoAddresses    CryptoAddress[]
-}
-
-model CryptoTransaction {
-  id              String   @id @default(cuid())
-  userId          String
-  cryptoWalletId  String
-  blockchainWalletId String? // Link to specific wallet used
-  type            String   // buy, sell, send, receive
-  cryptocurrency  String   // BTC, ETH, USDT
-  amount          Float
-  fiatAmount      Float    // Amount in fiat currency
-  fiatCurrency    String   @default("NGN")
-  exchangeRate    Float    // At time of transaction
-  status          String   @default("pending") // pending, completed, failed
-  transactionHash String?
-  fromAddress     String?
-  toAddress       String?
-  fee             Float    @default(0)
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cryptoWallet      CryptoWallet        @relation(fields: [cryptoWalletId], references: [id], onDelete: Cascade)
-  blockchainWallet  BlockchainWallet?   @relation(fields: [blockchainWalletId], references: [id], onDelete: SetNull)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-}
-
-model CryptoAddress {
-  id             String   @id @default(cuid())
-  userId         String
-  cryptoWalletId String
-  cryptocurrency String   // BTC, ETH, USDT
-  address        String   @unique
-  label          String?
-  isDefault      Boolean  @default(false)
-  createdAt      DateTime @default(now())
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cryptoWallet CryptoWallet @relation(fields: [cryptoWalletId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([cryptocurrency])
-}

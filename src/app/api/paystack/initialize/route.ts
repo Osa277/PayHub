@@ -6,20 +6,12 @@ import { initializePaystackPayment, isPaystackConfigured } from '@/lib/paystack'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import crypto from 'crypto'
+import { convertToNGN, getExchangeRate } from '@/lib/exchange-rates'
 
 const initSchema = z.object({
   amount: z.number().positive('Amount must be greater than 0').max(50000),
   currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).optional().default('NGN'),
 })
-
-// Simple exchange rates to NGN (update these based on current rates)
-const EXCHANGE_RATES: Record<string, number> = {
-  'NGN': 1,
-  'USD': 1550, // 1 USD = ~1550 NGN
-  'EUR': 1700, // 1 EUR = ~1700 NGN
-  'GBP': 1950, // 1 GBP = ~1950 NGN
-  'CAD': 1150, // 1 CAD = ~1150 NGN
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,8 +43,8 @@ export async function POST(req: NextRequest) {
     const userAmount = parsed.data.amount
 
     // Convert to NGN for Paystack (which only accepts NGN)
-    const exchangeRate = EXCHANGE_RATES[userCurrency] || 1
-    const amountInNGN = Math.round(userAmount * exchangeRate * 100) / 100 // Amount in NGN
+    const exchangeRate = await getExchangeRate(userCurrency)
+    const amountInNGN = await convertToNGN(userAmount, userCurrency)
 
     logger.info('Initializing Paystack payment', {
       userId: session.user.id,

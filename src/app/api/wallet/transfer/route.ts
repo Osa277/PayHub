@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         where: { userId: session.user.id },
       })
 
-      if (!currentWallet || currentWallet.balance < totalDeduction) {
+      if (!currentWallet || Number(currentWallet.balance) < totalDeduction) {
         throw new Error('Insufficient balance')
       }
 

@@ -1,32 +1,7 @@
-export const SUPPORTED_CURRENCIES = [
-  'USD',
-  'EUR',
-  'GBP',
-  'JPY',
-  'AUD',
-  'CAD',
-  'CHF',
-  'CNY',
-  'INR',
-  'MXN',
-  'SGD',
-  'HKD',
-]
+export const SUPPORTED_CURRENCIES = ['NGN']
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: '₦',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  AUD: 'A$',
-  CAD: 'C$',
-  CHF: 'CHF',
-  CNY: '¥',
-  INR: '₹',
-  MXN: '$',
-  SGD: 'S$',
-  HKD: 'HK$',
 }
 
 export const TRANSACTION_TYPES = {

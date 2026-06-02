@@ -7,6 +7,8 @@ const publicPaths = [
   '/auth/signup',
   '/auth/forgot-password',
   '/auth/reset-password',
+  '/auth/verify-email',
+  '/auth/resend-verification',
 ]
 
 const publicApiPaths = [
@@ -18,6 +20,24 @@ const publicApiPaths = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // CSRF protection: verify Origin header on state-mutating API requests
+  if (pathname.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    // Skip CSRF check for webhook endpoints (they come from external services)
+    if (!pathname.startsWith('/api/webhooks') && !pathname.startsWith('/api/auth')) {
+      const origin = request.headers.get('origin')
+      const host = request.headers.get('host')
+      if (origin && host) {
+        const originHost = new URL(origin).host
+        if (originHost !== host) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid request origin' },
+            { status: 403 }
+          )
+        }
+      }
+    }
+  }
 
   // Allow public pages
   if (publicPaths.includes(pathname)) {
@@ -53,6 +73,27 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Block unverified users from financial operations
+  const financialApiPaths = [
+    '/api/wallet/transfer',
+    '/api/wallet/withdraw',
+    '/api/payments',
+    '/api/crypto/buy',
+    '/api/crypto/sell',
+    '/api/crypto/send',
+    '/api/paystack/initialize',
+    '/api/invoices',
+    '/api/bank-accounts',
+  ]
+
+  const requiresVerification = financialApiPaths.some((p) => pathname.startsWith(p))
+  if (requiresVerification && !token.isVerified) {
+    return NextResponse.json(
+      { success: false, error: 'Please verify your email before performing financial operations.' },
+      { status: 403 }
+    )
   }
 
   return NextResponse.next()

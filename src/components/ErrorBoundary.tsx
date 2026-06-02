@@ -21,8 +21,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo)
+  componentDidCatch(_error: Error, _errorInfo: React.ErrorInfo) {
+    // Error logged by React in development; avoid leaking details in production
   }
 
   render() {
@@ -33,15 +33,15 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-[40vh] flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-black mb-2">
               Something went wrong
             </h2>
-            <p className="text-gray-500 mb-6 text-sm">
+            <p className="text-black mb-6 text-sm">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              className="bg-blue-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-950 transition"
             >
               Try Again
             </button>

@@ -10,7 +10,8 @@ const fetcher = async (url: string) => {
 export function useApi<T>(key: string | null, options?: SWRConfiguration) {
   return useSWR<T>(key, fetcher, {
     revalidateOnFocus: false,
-    dedupingInterval: 5000,
+    dedupingInterval: 10000,
+    keepPreviousData: true,
     ...options,
   })
 }

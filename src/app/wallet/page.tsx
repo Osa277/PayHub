@@ -1,18 +1,16 @@
 'use client'
 import React, { useState } from 'react'
-import { WalletDisplay } from '@/components/WalletDisplay'
+import Link from 'next/link'
 import { AuthGuard } from '@/components/AuthGuard'
 import { Wallet, Transaction, BankAccount } from '@/types'
 import { useApi } from '@/lib/hooks'
 import { useToast } from '@/components/Toast'
 import { CURRENCY_SYMBOLS } from '@/lib/constants'
-import { BankAccountManager } from '@/components/BankAccountManager'
 import { WithdrawalModal } from '@/components/WithdrawalModal'
 
 function TopUpModal({
   open,
   onClose,
-  currency,
 }: {
   open: boolean
   onClose: () => void
@@ -22,7 +20,6 @@ function TopUpModal({
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [paymentType, setPaymentType] = useState<'local' | 'international'>('local')
 
   if (!open) return null
 
@@ -36,36 +33,13 @@ function TopUpModal({
     }
     setLoading(true)
     try {
-      let endpoint = ''
-      let body: any = { amount: num }
-
-      if (paymentType === 'local') {
-        // Local payment (NGN only)
-        if (currency !== 'NGN') {
-          setError('Local payment only works with NGN wallet')
-          setLoading(false)
-          return
-        }
-        endpoint = '/api/payments/local/initialize'
-      } else {
-        // International payment (USD, EUR, GBP, CAD)
-        if (!['USD', 'EUR', 'GBP', 'CAD'].includes(currency)) {
-          setError('International payment only for USD, EUR, GBP, CAD')
-          setLoading(false)
-          return
-        }
-        endpoint = '/api/payments/international/initialize'
-        body.currency = currency
-      }
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/payments/local/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ amount: num }),
       })
 
       const data = await res.json()
-      console.log('Payment response:', { status: res.status, data })
 
       if (!res.ok || !data.success) {
         setError(data.error || `Failed to initialize payment (${res.status})`)
@@ -81,76 +55,27 @@ function TopUpModal({
       }
 
       window.location.href = url
-    } catch (err) {
-      console.error('Payment error:', err)
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } catch {
+      setError('Something went wrong')
       setLoading(false)
     }
   }
 
-  const isLocalPayment = paymentType === 'local'
-  const isInternationalPayment = paymentType === 'international'
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="topup-modal-title" onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Top Up Wallet</h2>
+        <h2 id="topup-modal-title" className="text-xl font-bold text-black mb-4">Top Up Wallet</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Payment Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Type
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentType('local')}
-                className={`p-3 rounded-lg border-2 transition ${
-                  isLocalPayment
-                    ? 'border-green-600 bg-green-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                }`}
-              >
-                <p className={`font-medium ${isLocalPayment ? 'text-green-700' : 'text-gray-700'}`}>
-                  🇳🇬 Local
-                </p>
-                <p className={`text-xs ${isLocalPayment ? 'text-green-600' : 'text-gray-500'}`}>
-                  NGN (Fast)
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentType('international')}
-                className={`p-3 rounded-lg border-2 transition ${
-                  isInternationalPayment
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                }`}
-              >
-                <p className={`font-medium ${isInternationalPayment ? 'text-blue-700' : 'text-gray-700'}`}>
-                  🌍 International
-                </p>
-                <p className={`text-xs ${isInternationalPayment ? 'text-blue-600' : 'text-gray-500'}`}>
-                  USD, EUR, GBP, CAD
-                </p>
-              </button>
-            </div>
-          </div>
-
-          {/* Wallet Currency Info */}
+          {/* Wallet Info */}
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <p className="text-sm font-medium text-blue-900">Your Wallet: {CURRENCY_SYMBOLS[currency]}{currency}</p>
-            {isLocalPayment ? (
-              <p className="text-xs text-blue-700 mt-1">Direct NGN payment via Paystack</p>
-            ) : (
-              <p className="text-xs text-blue-700 mt-1">Converts to {currency} (exchange rate applied)</p>
-            )}
+            <p className="text-sm font-medium text-blue-900">Payment via Paystack (NGN)</p>
+            <p className="text-xs text-blue-700 mt-1">Direct NGN payment — fast and secure</p>
           </div>
 
           {/* Amount Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount ({isLocalPayment ? 'NGN' : currency})
+            <label className="block text-sm font-medium text-black mb-1">
+              Amount (NGN)
             </label>
             <input
               type="number"
@@ -159,7 +84,7 @@ function TopUpModal({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="0.00"
               autoFocus
             />
@@ -167,28 +92,16 @@ function TopUpModal({
 
           {/* Presets */}
           <div className="flex gap-2">
-            {isLocalPayment
-              ? [1000, 5000, 10000, 50000].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setAmount(String(preset))}
-                  className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-                >
-                  ₦{preset.toLocaleString()}
-                </button>
-              ))
-              : [10, 50, 100, 500].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setAmount(String(preset))}
-                  className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-                >
-                  {CURRENCY_SYMBOLS[currency]}{preset}
-                </button>
-              ))
-            }
+            {[1000, 5000, 10000, 50000].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setAmount(String(preset))}
+                className="flex-1 py-2 text-sm font-medium border border-blue-200 rounded-lg hover:bg-blue-50 text-black"
+              >
+                ₦{preset.toLocaleString()}
+              </button>
+            ))}
           </div>
 
           {/* Error Message */}
@@ -199,16 +112,16 @@ function TopUpModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+              className="flex-1 py-3 bg-blue-50 text-black rounded-lg font-semibold hover:bg-blue-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 text-white rounded-lg font-semibold disabled:opacity-50 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 py-3 text-white rounded-lg font-semibold disabled:opacity-50 bg-blue-900 hover:bg-blue-950"
             >
-              {loading ? 'Processing...' : `Pay ${isLocalPayment ? 'NGN' : currency}`}
+              {loading ? 'Processing...' : 'Pay with Paystack'}
             </button>
           </div>
         </form>
@@ -273,9 +186,9 @@ function TransferModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="transfer-modal-title" onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Transfer Funds</h2>
+        <h2 id="transfer-modal-title" className="text-xl font-bold text-black mb-4">Transfer Funds</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <p className="text-sm font-medium text-blue-900">Transfer in: {currency}</p>
@@ -283,20 +196,20 @@ function TransferModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Recipient Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="recipient@email.com"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Amount ({currency})
             </label>
             <input
@@ -305,27 +218,27 @@ function TransferModal({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Note <span className="text-gray-400">(optional)</span>
+            <label className="block text-sm font-medium text-black mb-1">
+              Note <span className="text-black/60">(optional)</span>
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="What's this for?"
               maxLength={200}
             />
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-black">
             0.5% transfer fee applies
             {parseFloat(amount) > 0 && (
-              <span className="ml-1 font-medium text-gray-700">
+              <span className="ml-1 font-medium text-black">
                 (fee: {CURRENCY_SYMBOLS[currency] || '$'}{(parseFloat(amount) * 0.005).toFixed(2)}, total: {CURRENCY_SYMBOLS[currency] || '$'}{(parseFloat(amount) * 1.005).toFixed(2)})
               </span>
             )}
@@ -335,14 +248,14 @@ function TransferModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+              className="flex-1 py-3 bg-blue-50 text-black rounded-lg font-semibold hover:bg-blue-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50"
             >
               {loading ? 'Sending...' : 'Send'}
             </button>
@@ -356,14 +269,14 @@ function TransferModal({
 function WalletSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 bg-gray-200 rounded w-40" />
+      <div className="h-8 bg-blue-100 rounded w-40" />
       <div className="bg-gradient-to-r from-blue-200 to-blue-300 rounded-lg p-6 h-44" />
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
-        <div className="h-5 bg-gray-200 rounded w-48" />
+        <div className="h-5 bg-blue-100 rounded w-48" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex justify-between">
-            <div className="h-4 bg-gray-200 rounded w-32" />
-            <div className="h-4 bg-gray-200 rounded w-20" />
+            <div className="h-4 bg-blue-100 rounded w-32" />
+            <div className="h-4 bg-blue-100 rounded w-20" />
           </div>
         ))}
       </div>
@@ -393,8 +306,8 @@ export default function WalletPage() {
   // Calculate stats
   const stats = {
     totalBalance: wallet?.balance || 0,
-    totalSent: transactions.filter(t => t.type === 'transfer' && t.status === 'completed').reduce((sum, t) => sum + t.amount, 0),
-    totalReceived: transactions.filter(t => t.type === 'deposit' && t.status === 'completed').reduce((sum, t) => sum + t.amount, 0),
+    totalSent: transactions.filter(t => t.type === 'transfer' && t.status === 'completed').reduce((sum, t) => sum + Number(t.amount), 0),
+    totalReceived: transactions.filter(t => t.type === 'deposit' && t.status === 'completed').reduce((sum, t) => sum + Number(t.amount), 0),
     transactionCount: transactions.length,
   }
 
@@ -402,36 +315,6 @@ export default function WalletPage() {
   const filteredTransactions = transactionFilter === 'all'
     ? transactions
     : transactions.filter(t => t.type === transactionFilter)
-
-  const handleAddBankAccount = async (account: any) => {
-    try {
-      const res = await fetch('/api/bank-accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(account),
-      })
-      const result = await res.json()
-      if (!result.success) throw new Error(result.error)
-      toast('Bank account added successfully!')
-      mutateBankAccounts()
-    } catch (err: any) {
-      throw err
-    }
-  }
-
-  const handleDeleteBankAccount = async (id: string) => {
-    try {
-      const res = await fetch(`/api/bank-accounts/${id}`, {
-        method: 'DELETE',
-      })
-      const result = await res.json()
-      if (!result.success) throw new Error(result.error)
-      toast('Bank account removed')
-      mutateBankAccounts()
-    } catch (err: any) {
-      throw err
-    }
-  }
 
   if (isLoading) {
     return <AuthGuard><WalletSkeleton /></AuthGuard>
@@ -442,9 +325,9 @@ export default function WalletPage() {
       <AuthGuard>
         <div className="text-center py-12">
           <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Failed to load wallet</h2>
-          <p className="text-gray-500 mb-4">{error.message}</p>
-          <button onClick={() => mutate()} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">
+          <h2 className="text-xl font-bold text-black mb-2">Failed to load wallet</h2>
+          <p className="text-black mb-4">{error.message}</p>
+          <button onClick={() => mutate()} className="bg-blue-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-950">
             Retry
           </button>
         </div>
@@ -461,49 +344,104 @@ export default function WalletPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">My Wallet</h1>
-          <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">{wallet.currency}</span>
+          <h1 className="text-3xl font-bold text-black">My Wallet</h1>
+          <span className="text-sm bg-blue-100 text-blue-900 px-3 py-1 rounded-full font-medium">{wallet.currency}</span>
         </div>
 
-        {/* Main Wallet Card */}
-        <WalletDisplay
-          wallet={wallet}
-          onTopUp={() => setShowTopUp(true)}
-          onTransfer={() => setShowTransfer(true)}
-        />
+        {/* Main Wallet Card (Paystack-only) */}
+        <div className="bg-gradient-to-r from-blue-900 to-blue-950 rounded-lg p-6 text-white shadow-lg mb-4">
+          <div className="mb-4">
+            <p className="text-sm opacity-90">Available Balance</p>
+            <h2 className="text-4xl font-bold">
+              {CURRENCY_SYMBOLS[wallet.currency || 'NGN']}{Number(wallet.balance).toFixed(2)}
+            </h2>
+          </div>
+          <p className="text-sm opacity-75 mb-6">Wallet ID: {wallet.id}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowTopUp(true)}
+              className="flex-1 bg-white text-blue-900 font-semibold py-2 px-4 rounded-lg hover:bg-opacity-90 transition"
+            >
+              Top Up
+            </button>
+            <button
+              onClick={() => setShowTransfer(true)}
+              className="flex-1 bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+            >
+              Transfer
+            </button>
+          </div>
+        </div>
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-600">
-            <p className="text-sm text-gray-500 font-medium">Total Sent</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
-              {CURRENCY_SYMBOLS[wallet.currency || 'USD']}{stats.totalSent.toFixed(2)}
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-900">
+            <p className="text-sm text-black font-medium">Total Sent</p>
+            <p className="text-2xl font-bold text-black mt-1">
+              {CURRENCY_SYMBOLS[wallet.currency || 'NGN']}{stats.totalSent.toFixed(2)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-600">
-            <p className="text-sm text-gray-500 font-medium">Total Received</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
-              {CURRENCY_SYMBOLS[wallet.currency || 'USD']}{stats.totalReceived.toFixed(2)}
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-800">
+            <p className="text-sm text-black font-medium">Total Received</p>
+            <p className="text-2xl font-bold text-black mt-1">
+              {CURRENCY_SYMBOLS[wallet.currency || 'NGN']}{stats.totalReceived.toFixed(2)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-600">
-            <p className="text-sm text-gray-500 font-medium">Transactions</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.transactionCount}</p>
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-900">
+            <p className="text-sm text-black font-medium">Transactions</p>
+            <p className="text-2xl font-bold text-black mt-1">{stats.transactionCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-600">
-            <p className="text-sm text-gray-500 font-medium">Bank Accounts</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{bankAccounts.length}</p>
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-800">
+            <p className="text-sm text-black font-medium">Bank Accounts</p>
+            <p className="text-2xl font-bold text-black mt-1">{bankAccounts.length}</p>
           </div>
         </div>
 
-        {/* Bank Account Manager */}
+        {/* Bank Account Summary */}
         <div className="bg-white rounded-lg shadow p-6">
-          <BankAccountManager
-            accounts={bankAccounts}
-            onAdd={handleAddBankAccount}
-            onDelete={handleDeleteBankAccount}
-            loading={isLoading}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-black">Bank Accounts</h2>
+            <Link href="/bank-accounts" className="text-blue-900 hover:text-blue-950 font-semibold text-sm">
+              Manage →
+            </Link>
+          </div>
+          {bankAccounts.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-3xl mb-2">🏦</div>
+              <p className="text-black/70 mb-4">No bank accounts added yet</p>
+              <Link
+                href="/bank-accounts"
+                className="inline-block bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg font-semibold transition"
+              >
+                + Add Bank Account
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bankAccounts.map((account) => {
+                const masked = account.accountNumber.length > 4
+                  ? '*'.repeat(account.accountNumber.length - 4) + account.accountNumber.slice(-4)
+                  : account.accountNumber
+                return (
+                  <div key={account.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <p className="font-semibold text-black">{account.bankName}</p>
+                      <p className="text-sm text-black/70">{account.accountName} • {masked}</p>
+                    </div>
+                    {account.isDefault && (
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">Default</span>
+                    )}
+                  </div>
+                )
+              })}
+              <Link
+                href="/bank-accounts"
+                className="block text-center text-blue-900 hover:text-blue-950 font-semibold text-sm mt-4"
+              >
+                View & Manage All Accounts →
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Withdrawal Button */}
@@ -511,7 +449,7 @@ export default function WalletPage() {
           <button
             onClick={() => setShowWithdraw(true)}
             disabled={bankAccounts.length === 0}
-            className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="w-full py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {bankAccounts.length === 0 ? 'Add Bank Account to Withdraw' : 'Withdraw to Bank'}
           </button>
@@ -520,7 +458,7 @@ export default function WalletPage() {
         {/* Transaction Filters & List */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Transaction History</h2>
+            <h2 className="text-lg font-bold text-black">Transaction History</h2>
             <div className="flex gap-2 flex-wrap">
               {(['all', 'deposit', 'transfer', 'withdrawal'] as const).map((filter) => (
                 <button
@@ -528,8 +466,8 @@ export default function WalletPage() {
                   onClick={() => setTransactionFilter(filter)}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition ${
                     transactionFilter === filter
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-blue-900 text-white'
+                      : 'bg-blue-50 text-black hover:bg-blue-100'
                   }`}
                 >
                   {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -541,29 +479,29 @@ export default function WalletPage() {
           {/* Enhanced Transaction List */}
           {filteredTransactions.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No {transactionFilter === 'all' ? 'transactions' : transactionFilter + 's'} yet</p>
+              <p className="text-black">No {transactionFilter === 'all' ? 'transactions' : transactionFilter + 's'} yet</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredTransactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                  className="flex items-center justify-between p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition border border-blue-200"
                 >
                   {/* Left: Icon & Description */}
                   <div className="flex items-center gap-3 flex-1">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
                       tx.type === 'deposit' ? 'bg-green-100' :
                       tx.type === 'transfer' ? 'bg-blue-100' :
-                      'bg-orange-100'
+                      'bg-blue-100'
                     }`}>
                       {tx.type === 'deposit' ? '📥' : tx.type === 'transfer' ? '↔️' : '📤'}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-black">
                         {tx.type === 'deposit' ? 'Top-up' : tx.type === 'transfer' ? 'Transfer' : 'Withdrawal'}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{tx.description}</p>
+                      <p className="text-sm text-black truncate">{tx.description}</p>
                     </div>
                   </div>
 
@@ -572,9 +510,9 @@ export default function WalletPage() {
                     <p className={`font-bold text-sm ${
                       tx.type === 'payment' ? 'text-green-600' :
                       tx.type === 'transfer' && tx.amount ? 'text-red-600' :
-                      'text-blue-600'
+                      'text-blue-900'
                     }`}>
-                      {tx.type === 'payment' ? '+' : '-'}{CURRENCY_SYMBOLS[tx.currency || 'USD']}{tx.amount.toFixed(2)}
+                      {tx.type === 'payment' ? '+' : '-'}{CURRENCY_SYMBOLS[tx.currency || 'NGN']}{Number(tx.amount).toFixed(2)}
                     </p>
                     <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${
                       tx.status === 'completed' ? 'bg-green-100 text-green-700' :

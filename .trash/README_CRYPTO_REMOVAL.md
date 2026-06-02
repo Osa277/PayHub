@@ -1,0 +1,1 @@
+This directory contains all files and directories removed from the project as part of the crypto payment deprecation. Review and delete permanently if no longer needed.

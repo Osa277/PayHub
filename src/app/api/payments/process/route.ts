@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { processPaymentSchema } from '@/lib/validations'
 import { notifyPaymentSent } from '@/lib/notifications'
+import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +26,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { transactionId } = parsed.data
+    const { transactionId, pin } = parsed.data
+
+    // Validate transaction PIN server-side
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, email: true, phone: true, name: true, transactionPin: true },
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    if (!user.transactionPin) {
+      return NextResponse.json(
+        { success: false, error: 'Transaction PIN not set. Please set a PIN in your profile settings.' },
+        { status: 400 }
+      )
+    }
+
+    const pinValid = await bcrypt.compare(pin, user.transactionPin)
+    if (!pinValid) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid transaction PIN' },
+        { status: 403 }
+      )
+    }
 
     // Find the transaction
     const transaction = await prisma.transaction.findUnique({
@@ -46,56 +75,55 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check wallet balance
-    const wallet = await prisma.wallet.findUnique({
-      where: { userId: session.user.id },
-    })
+    const totalAmount = Number(transaction.amount) + Number(transaction.fee)
 
-    if (!wallet) {
-      return NextResponse.json(
-        { success: false, error: 'Wallet not found' },
-        { status: 404 }
-      )
-    }
+    // Process: check balance and deduct atomically to prevent race conditions
+    try {
+      await prisma.$transaction(async (tx) => {
+        const currentWallet = await tx.wallet.findUnique({
+          where: { userId: session.user.id },
+        })
 
-    const totalAmount = transaction.amount + transaction.fee
-    if (wallet.balance < totalAmount) {
-      // Mark transaction as failed
-      await prisma.transaction.update({
-        where: { id: transactionId },
-        data: { status: 'failed' },
+        if (!currentWallet || Number(currentWallet.balance) < totalAmount) {
+          // Mark transaction as failed
+          await tx.transaction.update({
+            where: { id: transactionId },
+            data: { status: 'failed' },
+          })
+          throw new Error('Insufficient balance')
+        }
+
+        await tx.wallet.update({
+          where: { userId: session.user.id },
+          data: { balance: { decrement: totalAmount } },
+        })
+
+        await tx.transaction.update({
+          where: { id: transactionId },
+          data: { status: 'completed' },
+        })
       })
-
-      return NextResponse.json(
-        { success: false, error: 'Insufficient balance' },
-        { status: 400 }
-      )
+    } catch (txError) {
+      if ((txError as Error).message === 'Insufficient balance') {
+        return NextResponse.json(
+          { success: false, error: 'Insufficient balance' },
+          { status: 400 }
+        )
+      }
+      throw txError
     }
-
-    // Process: deduct balance and mark as completed
-    await prisma.$transaction([
-      prisma.wallet.update({
-        where: { userId: session.user.id },
-        data: { balance: { decrement: totalAmount } },
-      }),
-      prisma.transaction.update({
-        where: { id: transactionId },
-        data: { status: 'completed' },
-      }),
-    ])
 
     const updatedTransaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
     })
 
     // Send payment notification (non-blocking)
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } })
     if (user) {
       notifyPaymentSent(
         user.email,
         user.phone,
         {
-          amount: transaction.amount,
+          amount: Number(transaction.amount),
           currency: transaction.currency,
           recipient: transaction.recipientEmail || 'N/A',
           txnId: transactionId,

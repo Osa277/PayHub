@@ -3,9 +3,19 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { logger } from '@/lib/logger'
 import { resetPasswordSchema } from '@/lib/validations'
+import { rateLimitMiddleware, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: max 5 reset attempts per 15 min per IP
+    const isRateLimited = await rateLimitMiddleware(req, {
+      interval: 900000,
+      maxRequests: 5,
+    })
+    if (isRateLimited) {
+      return rateLimitResponse(900)
+    }
+
     const body = await req.json()
     const parsed = resetPasswordSchema.safeParse(body)
     if (!parsed.success) {

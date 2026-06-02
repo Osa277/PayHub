@@ -60,8 +60,8 @@ function CallbackContent() {
         {status === 'verifying' && (
           <>
             <div className="w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Verifying Payment</h2>
-            <p className="text-gray-500">Please wait while we confirm your payment...</p>
+            <h2 className="text-xl font-bold text-black mb-2">Verifying Payment</h2>
+            <p className="text-black">Please wait while we confirm your payment...</p>
           </>
         )}
 
@@ -72,14 +72,14 @@ function CallbackContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-            <p className="text-gray-500 mb-1">Your wallet has been credited.</p>
-            {amount && (
+            <h2 className="text-xl font-bold text-black mb-2">Payment Successful!</h2>
+            <p className="text-black mb-1">Your wallet has been credited.</p>
+            {amount != null && (
               <p className="text-2xl font-bold text-green-600 mb-4">
-                ₦{amount.toLocaleString()}
+                {Number(amount).toLocaleString(undefined, { style: 'currency', currency: 'NGN' })}
               </p>
             )}
-            <p className="text-xs text-gray-400 mb-4">Redirecting to wallet in 3 seconds...</p>
+            <p className="text-xs text-black/60 mb-4">Redirecting to wallet in 3 seconds...</p>
             <button
               onClick={() => router.push('/wallet')}
               className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
@@ -96,18 +96,18 @@ function CallbackContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Payment Failed</h2>
-            <p className="text-gray-500 mb-6">{error}</p>
+            <h2 className="text-xl font-bold text-black mb-2">Payment Failed</h2>
+            <p className="text-black mb-6">{error}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => router.push('/wallet')}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+                className="flex-1 py-3 bg-blue-50 text-black rounded-lg font-semibold hover:bg-blue-100"
               >
                 Back to Wallet
               </button>
               <button
                 onClick={() => router.push('/wallet')}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                className="flex-1 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-950"
               >
                 Try Again
               </button>

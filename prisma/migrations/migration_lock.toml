@@ -1,1 +1,0 @@
-CREATE TABLE migration_lock (locked INTEGER NOT NULL PRIMARY KEY, locked_by VARCHAR(255), locked_at TIMESTAMP NOT NULL, index_name VARCHAR(250))

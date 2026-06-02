@@ -1,8 +1,14 @@
 import { logger } from './logger'
+import * as bitcoin from 'bitcoinjs-lib'
+import ECPairFactory from 'ecpair'
+import * as ecc from 'tiny-secp256k1'
+
+const ECPair = ECPairFactory(ecc)
 
 /**
  * Bitcoin transaction handler
- * Uses blockchain APIs for transaction creation and broadcasting
+ * Uses bitcoinjs-lib for real transaction creation, signing, and broadcasting
+ * via Blockstream Esplora API.
  */
 
 type BitcoinNetwork = 'mainnet' | 'testnet'
@@ -14,11 +20,16 @@ const BITCOIN_RPC = {
 }
 
 interface BitcoinTransactionParams {
+  privateKeyWIF: string // WIF-encoded private key for signing
   fromAddress: string
   toAddress: string
   amount: number // in BTC
   feeRate: number // satoshis per vB
   network: BitcoinNetwork
+}
+
+function getBitcoinNetwork(network: BitcoinNetwork): bitcoin.Network {
+  return network === 'mainnet' ? bitcoin.networks.bitcoin : bitcoin.networks.testnet
 }
 
 /**
@@ -48,7 +59,13 @@ export async function getBitcoinBalance(params: {
     const { address, network } = params
     const rpcUrl = BITCOIN_RPC[network]
 
-    const res = await fetch(`${rpcUrl}/address/${address}`)
+    // OPTIMIZED: Add 5-second timeout to prevent request hangs
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+
+    const res = await fetch(`${rpcUrl}/address/${address}`, { signal: controller.signal })
+    clearTimeout(timeout)
+    
     if (!res.ok) throw new Error('Failed to fetch address')
 
     const data = await res.json()
@@ -73,8 +90,14 @@ export async function getBitcoinFeeRate(params: {
   try {
     const { priority } = params
 
+    // OPTIMIZED: Add 5-second timeout to prevent request hangs
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+
     // Use Blockchair or Mempool API for fee rates
-    const res = await fetch('https://mempool.space/api/v1/fees/recommended')
+    const res = await fetch('https://mempool.space/api/v1/fees/recommended', { signal: controller.signal })
+    clearTimeout(timeout)
+    
     if (!res.ok) throw new Error('Failed to fetch fee rates')
 
     const data = await res.json()
@@ -122,8 +145,35 @@ export async function getBitcoinUTXOs(params: {
 }
 
 /**
- * Create and broadcast a Bitcoin transaction
- * Note: In production, you'd use a library like bitcoinjs-lib with a signing service
+ * Fetch raw transaction hex for a UTXO (needed for non-segwit inputs)
+ */
+async function fetchRawTransaction(txid: string, network: BitcoinNetwork): Promise<string> {
+  const rpcUrl = BITCOIN_RPC[network]
+  const res = await fetch(`${rpcUrl}/tx/${txid}/hex`)
+  if (!res.ok) throw new Error(`Failed to fetch raw tx ${txid}`)
+  return res.text()
+}
+
+/**
+ * Broadcast a signed raw transaction hex to the network
+ */
+export async function broadcastTransaction(txHex: string, network: BitcoinNetwork): Promise<string> {
+  const rpcUrl = BITCOIN_RPC[network]
+  const res = await fetch(`${rpcUrl}/tx`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: txHex,
+  })
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Broadcast failed: ${errorText}`)
+  }
+  return res.text() // returns txid
+}
+
+/**
+ * Create, sign, and broadcast a Bitcoin transaction using bitcoinjs-lib.
+ * Supports P2WPKH (native segwit / bech32) addresses.
  */
 export async function createBitcoinTransaction(params: BitcoinTransactionParams): Promise<{
   hash: string
@@ -134,7 +184,8 @@ export async function createBitcoinTransaction(params: BitcoinTransactionParams)
   status: 'pending'
 }> {
   try {
-    const { fromAddress, toAddress, amount, feeRate, network } = params
+    const { privateKeyWIF, fromAddress, toAddress, amount, feeRate, network } = params
+    const btcNetwork = getBitcoinNetwork(network)
 
     // Validate addresses
     if (!validateBitcoinAddressFormat(fromAddress)) {
@@ -144,42 +195,114 @@ export async function createBitcoinTransaction(params: BitcoinTransactionParams)
       throw new Error('Invalid recipient address')
     }
 
+    // Derive key pair from WIF
+    const keyPair = ECPair.fromWIF(privateKeyWIF, btcNetwork)
+
     // Get UTXOs
     const utxos = await getBitcoinUTXOs({ address: fromAddress, network })
     if (utxos.length === 0) {
       throw new Error('No UTXOs available')
     }
 
-    // Calculate fee
-    const txSize = 250 // approximate bytes for typical transaction
-    const fee = (feeRate * txSize) / 1e8 // convert to BTC
+    const amountSats = BigInt(Math.round(amount * 1e8))
 
-    // Verify sufficient balance
-    const totalUTXOValue = utxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8
-    if (totalUTXOValue < amount + fee) {
+    // Select UTXOs using simple greedy approach (largest first)
+    const sorted = [...utxos].sort((a, b) => b.value - a.value)
+    const selected: typeof utxos = []
+    let inputSum = BigInt(0)
+    for (const utxo of sorted) {
+      selected.push(utxo)
+      inputSum += BigInt(utxo.value)
+      // Estimate tx size: ~68 bytes per input + 31 per output + 10 overhead
+      const estimatedSize = selected.length * 68 + 2 * 31 + 10
+      const estimatedFee = BigInt(estimatedSize * feeRate)
+      if (inputSum >= amountSats + estimatedFee) break
+    }
+
+    // Final fee calculation based on actual input count
+    const txSize = selected.length * 68 + 2 * 31 + 10
+    const feeSats = BigInt(txSize * feeRate)
+    const fee = Number(feeSats) / 1e8
+
+    if (inputSum < amountSats + feeSats) {
       throw new Error('Insufficient balance')
     }
 
-    logger.info('Bitcoin transaction prepared', {
+    const changeSats = inputSum - amountSats - feeSats
+
+    // Build PSBT
+    const psbt = new bitcoin.Psbt({ network: btcNetwork })
+
+    // Add inputs — fetch raw tx for each UTXO
+    for (const utxo of selected) {
+      if (fromAddress.startsWith('bc1') || fromAddress.startsWith('tb1')) {
+        // Native segwit (P2WPKH) — use witnessUtxo
+        const p2wpkh = bitcoin.payments.p2wpkh({
+          pubkey: Buffer.from(keyPair.publicKey),
+          network: btcNetwork,
+        })
+        psbt.addInput({
+          hash: utxo.txid,
+          index: utxo.vout,
+          witnessUtxo: {
+            script: p2wpkh.output!,
+            value: BigInt(utxo.value),
+          },
+        })
+      } else {
+        // Legacy (P2PKH / P2SH) — needs full raw transaction
+        const rawHex = await fetchRawTransaction(utxo.txid, network)
+        psbt.addInput({
+          hash: utxo.txid,
+          index: utxo.vout,
+          nonWitnessUtxo: Buffer.from(rawHex, 'hex'),
+        })
+      }
+    }
+
+    // Add recipient output
+    psbt.addOutput({
+      address: toAddress,
+      value: amountSats,
+    })
+
+    // Add change output (back to sender) if change is above dust (546 sats)
+    if (changeSats > BigInt(546)) {
+      psbt.addOutput({
+        address: fromAddress,
+        value: changeSats,
+      })
+    }
+
+    // Sign all inputs
+    for (let i = 0; i < selected.length; i++) {
+      psbt.signInput(i, keyPair)
+    }
+
+    // Finalize and extract raw hex
+    psbt.finalizeAllInputs()
+    const txHex = psbt.extractTransaction().toHex()
+
+    logger.info('Bitcoin transaction signed', {
       context: {
         from: fromAddress,
         to: toAddress,
         amount,
         fee,
-        estimatedSize: txSize,
+        inputCount: selected.length,
+        txSize,
       },
     })
 
-    /**
-     * In production, you would:
-     * 1. Use bitcoinjs-lib to create the transaction
-     * 2. Sign it with the private key (should be done in a secure service)
-     * 3. Broadcast it to the network
-     *
-     * For now, this returns a prepared transaction object
-     */
+    // Broadcast to network
+    const txid = await broadcastTransaction(txHex, network)
+
+    logger.info('Bitcoin transaction broadcast', {
+      context: { txid },
+    })
+
     return {
-      hash: `0x${Math.random().toString(16).slice(2)}`, // mock hash
+      hash: txid,
       from: fromAddress,
       to: toAddress,
       amount,

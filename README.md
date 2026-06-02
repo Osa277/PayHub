@@ -6,7 +6,6 @@ A modern, full-stack payment application for local and international transaction
 
 - **Digital Wallet** — Manage funds in a secure digital wallet
 - **Paystack Payments** — Top up wallet via card, bank transfer, or USSD (NGN)
-- **Crypto Payments** — Send payments via NOWPayments (BTC, ETH, USDT, etc.)
 - **Google OAuth** — Sign in with Google or email/password
 - **Dashboard** — Transaction overview and financial statistics
 - **Wallet Transfers** — Send money to other PayHub users by email
@@ -20,7 +19,6 @@ A modern, full-stack payment application for local and international transaction
 - **Styling:** Tailwind CSS
 - **Auth:** NextAuth v4 (Google OAuth + Credentials)
 - **Database:** PostgreSQL on Neon (via Prisma ORM)
-- **Payments:** Paystack (wallet top-up), NOWPayments (crypto)
 - **Email:** Resend SDK
 
 ## Getting Started
@@ -40,8 +38,6 @@ A modern, full-stack payment application for local and international transaction
    GOOGLE_CLIENT_SECRET=your_google_secret
    PAYSTACK_SECRET_KEY=sk_test_...
    PAYSTACK_PUBLIC_KEY=pk_test_...
-   NOWPAYMENTS_API_KEY=your_key
-   NOWPAYMENTS_IPN_SECRET=your_secret
    RESEND_API_KEY=your_resend_key
    ```
 
@@ -64,9 +60,6 @@ A modern, full-stack payment application for local and international transaction
 - `POST /api/auth/forgot-password` — Request password reset
 - `POST /api/auth/reset-password` — Reset password with token
 
-### Payments
-- `POST /api/payments` — Create crypto payment session
-- `POST /api/payments/process` — Process payment with PIN
 
 ### Paystack
 - `POST /api/paystack/initialize` — Create Paystack checkout session

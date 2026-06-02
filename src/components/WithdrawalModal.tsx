@@ -82,29 +82,29 @@ export function WithdrawalModal({
   const total = selectedAmount + fee
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="withdrawal-modal-title" onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Withdraw to Bank</h2>
+        <h2 id="withdrawal-modal-title" className="text-xl font-bold text-black mb-4">Withdraw to Bank</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <span className="text-lg">🏦</span>
             <div>
-              <p className="text-sm font-medium text-blue-700">
+              <p className="text-sm font-medium text-blue-900">
                 Available: {CURRENCY_SYMBOLS[wallet.currency] || '$'}
-                {wallet.balance.toFixed(2)}
+                {Number(wallet.balance).toFixed(2)}
               </p>
-              <p className="text-xs text-blue-600">1% withdrawal fee applies</p>
+              <p className="text-xs text-blue-900">1% withdrawal fee applies</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Bank Account
             </label>
             <select
               value={bankAccountId}
               onChange={(e) => setBankAccountId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
             >
               <option value="">Select bank account</option>
               {bankAccounts.map((account) => (
@@ -119,7 +119,7 @@ export function WithdrawalModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Amount ({wallet.currency})
             </label>
             <input
@@ -128,7 +128,7 @@ export function WithdrawalModal({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="0.00"
               autoFocus
             />
@@ -140,43 +140,43 @@ export function WithdrawalModal({
                 key={preset}
                 type="button"
                 onClick={() => setAmount(String(preset))}
-                className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex-1 py-2 text-sm font-medium border border-blue-200 rounded-lg hover:bg-blue-50 text-black"
               >
-                ₦{(preset / 100).toLocaleString()}
+                {CURRENCY_SYMBOLS[wallet.currency] || '₦'}{preset.toLocaleString()}
               </button>
             ))}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Note <span className="text-gray-400">(optional)</span>
+            <label className="block text-sm font-medium text-black mb-1">
+              Note <span className="text-black/60">(optional)</span>
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="What's this withdrawal for?"
               maxLength={200}
             />
           </div>
 
-          <div className="bg-gray-50 p-3 rounded-lg space-y-2 text-sm">
-            <div className="flex justify-between text-gray-700">
+          <div className="bg-white border border-blue-100 p-3 rounded-lg space-y-2 text-sm">
+            <div className="flex justify-between text-black">
               <span>Amount:</span>
               <span className="font-medium">
                 {CURRENCY_SYMBOLS[wallet.currency] || '$'}
                 {selectedAmount.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between text-gray-700">
+            <div className="flex justify-between text-black">
               <span>Fee (1%):</span>
               <span className="font-medium">
                 {CURRENCY_SYMBOLS[wallet.currency] || '$'}
                 {fee.toFixed(2)}
               </span>
             </div>
-            <div className="border-t pt-2 flex justify-between text-gray-900 font-semibold">
+            <div className="border-t pt-2 flex justify-between text-black font-semibold">
               <span>Total:</span>
               <span>
                 {CURRENCY_SYMBOLS[wallet.currency] || '$'}
@@ -191,14 +191,14 @@ export function WithdrawalModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200"
+              className="flex-1 py-3 bg-white text-black border border-blue-900 rounded-lg font-semibold hover:bg-blue-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitLoading || loading || bankAccounts.length === 0}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50"
             >
               {submitLoading ? 'Processing...' : 'Withdraw'}
             </button>

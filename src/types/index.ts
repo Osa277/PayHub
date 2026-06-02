@@ -40,11 +40,10 @@ export interface AuthState {
 }
 
 export interface PaymentMethod {
+  // Paystack-only: crypto fields removed
   id: string
   userId: string
-  type: 'crypto'
-  cryptoCurrency?: 'BTC' | 'ETH' | 'USDT' | 'USDC'
-  walletAddress?: string
+  type: 'paystack'
   isDefault: boolean
   createdAt: Date
 }
@@ -86,8 +85,16 @@ export interface Invoice {
   amount: number
   currency: string
   status: 'draft' | 'sent' | 'paid' | 'overdue'
+  recipientEmail?: string | null
+  recipientName?: string | null
   items: InvoiceItem[]
   dueDate: Date
+  isRecurring: boolean
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+  recurrenceInterval: number
+  nextDueDate?: Date | null
+  lastSentAt?: Date | null
+  parentInvoiceId?: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -110,17 +117,13 @@ export interface Wallet {
 }
 
 export interface PaymentSession {
+  // Paystack-only: crypto fields removed
   sessionId: string
   userId: string
   amount: number
   currency: string
-  paymentProvider: 'crypto'
-  cryptoCurrency?: 'BTC' | 'ETH' | 'USDT' | 'USDC'
-  walletAddress?: string
-  cryptoAmount?: number
-  exchangeRate?: number
-  txHash?: string
-  status: 'pending' | 'awaiting_payment' | 'confirming' | 'completed' | 'failed' | 'cancelled' | 'expired'
+  paymentProvider: 'paystack'
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired'
   expiresAt: Date
 }
 

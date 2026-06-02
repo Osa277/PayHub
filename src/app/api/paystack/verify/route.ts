@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    logger.info('Payment session lookup', { userId: session.user.id, context: { paymentSession, reference } })
+    logger.info('Payment session lookup', { userId: session.user.id, context: { sessionId: paymentSession?.id, status: paymentSession?.status, reference } })
 
     if (!paymentSession) {
       logger.error('Payment session not found', { userId: session.user.id, context: { reference } })
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     if (paymentSession.status === 'completed') {
       return NextResponse.json({
         success: true,
-        data: { status: 'completed', amount: paymentSession.amount },
+        data: { status: 'completed', amount: Number(paymentSession.amount) },
         message: 'Payment already processed',
       })
     }
@@ -60,11 +60,11 @@ export async function GET(req: NextRequest) {
     // Verify with Paystack API
     logger.info('Verifying with Paystack', { context: { reference } })
     const verification = await verifyPaystackPayment(reference)
-    logger.info('Paystack verification response', { context: { verification } })
+    logger.info('Paystack verification result', { context: { reference, status: verification.data.status } })
 
     if (verification.data.status === 'success') {
       // Credit the user's wallet with original amount in their currency
-      const amountToCredit = paymentSession.amount
+      const amountToCredit = Number(paymentSession.amount)
 
       logger.info('Crediting wallet', { userId: session.user.id, context: { amount: amountToCredit, currency: paymentSession.currency } })
 

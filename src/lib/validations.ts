@@ -6,7 +6,7 @@ export const signupSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   phone: z.string().max(20).optional().nullable(),
   country: z.string().max(100).optional().nullable(),
-  currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).default('NGN'), // Default to NGN for Paystack
+  currency: z.literal('NGN').default('NGN'),
 })
 
 export const loginSchema = z.object({
@@ -24,12 +24,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 })
 
+// Paystack-only payment schema (crypto removed)
 export const paymentSchema = z.object({
   amount: z.number().positive('Amount must be greater than 0').max(100000),
   currency: z.string().min(1).max(10),
-  cryptoCurrency: z.enum(['btc', 'eth', 'usdttrc20', 'usdcerc20'], {
-    message: 'Unsupported cryptocurrency',
-  }),
   recipientEmail: z.string().email().optional().nullable(),
   description: z.string().max(500).optional(),
 })
@@ -38,7 +36,7 @@ export const transferSchema = z.object({
   recipientEmail: z.string().email('Valid recipient email is required'),
   amount: z.number().positive('Amount must be greater than 0').max(100000),
   description: z.string().max(500).optional(),
-  currency: z.enum(['NGN', 'USD', 'EUR', 'GBP', 'CAD']).optional(),
+  currency: z.literal('NGN').optional(),
 })
 
 export const topupSchema = z.object({
@@ -49,25 +47,36 @@ export const invoiceSchema = z.object({
   transactionId: z.string().min(1, 'Transaction ID is required'),
   amount: z.number().positive(),
   currency: z.string().min(1).max(10),
+  recipientEmail: z.string().email('Invalid recipient email').max(255).optional(),
+  recipientName: z.string().min(1).max(200).optional(),
   items: z.array(z.object({
     description: z.string(),
     quantity: z.number().positive(),
     unitPrice: z.number().nonnegative(),
   })).min(1),
   dueDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)),
+  isRecurring: z.boolean().optional(),
+  recurrencePattern: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional(),
+  recurrenceInterval: z.number().int().min(1).max(365).optional(),
 })
 
 export const profileUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  avatar: z.string().url().max(500).optional().nullable(),
+  avatar: z.string().max(500).optional().nullable(),
   bio: z.string().max(500).optional().nullable(),
   phone: z.string().max(20).optional().nullable(),
   country: z.string().max(100).optional().nullable(),
   currency: z.string().max(10).optional(),
 })
 
+export const pinSetupSchema = z.object({
+  pin: z.string().length(4, 'PIN must be 4 digits').regex(/^\d{4}$/, 'PIN must be 4 digits'),
+  currentPin: z.string().length(4).regex(/^\d{4}$/).optional(),
+})
+
 export const processPaymentSchema = z.object({
   transactionId: z.string().min(1, 'Transaction ID is required'),
+  pin: z.string().length(4, 'PIN must be 4 digits').regex(/^\d{4}$/, 'PIN must be 4 digits'),
 })
 
 export const transactionCreateSchema = z.object({

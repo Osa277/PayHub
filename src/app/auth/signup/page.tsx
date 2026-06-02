@@ -174,21 +174,21 @@ export default function SignupPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">🚀</div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-500 mt-1">Join PayHub and start transacting</p>
+            <h1 className="text-2xl font-bold text-black">Create Account</h1>
+            <p className="text-black mt-1">Join PayHub and start transacting</p>
           </div>
 
           {/* Step Indicator */}
           <div className="flex items-center mb-8">
-            <div className={`flex-1 h-1 rounded ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-2 ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+            <div className={`flex-1 h-1 rounded ${step >= 1 ? 'bg-blue-900' : 'bg-blue-100'}`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-2 ${step >= 1 ? 'bg-blue-900 text-white' : 'bg-blue-100 text-black'}`}>
               1
             </div>
-            <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-2 ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+            <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-blue-900' : 'bg-blue-100'}`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-2 ${step >= 2 ? 'bg-blue-900 text-white' : 'bg-blue-100 text-black'}`}>
               2
             </div>
-            <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-blue-900' : 'bg-blue-100'}`} />
           </div>
 
           {/* Error Alert */}
@@ -202,7 +202,7 @@ export default function SignupPage() {
           {step === 1 && (
             <form onSubmit={handleNextStep} className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-black mb-1">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -211,13 +211,13 @@ export default function SignupPage() {
                   required
                   value={formData.name}
                   onChange={(e) => updateField('name', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="signup-email" className="block text-sm font-medium text-black mb-1">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -226,13 +226,13 @@ export default function SignupPage() {
                   required
                   value={formData.email}
                   onChange={(e) => updateField('email', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="you@example.com"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
+                  placeholder="Email address"
                 />
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="phone" className="block text-sm font-medium text-black mb-1">
                   Phone Number
                 </label>
                 <input
@@ -240,20 +240,20 @@ export default function SignupPage() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => updateField('phone', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
 
               <div>
-                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="country" className="block text-sm font-medium text-black mb-1">
                   Country
                 </label>
                 <select
                   id="country"
                   value={formData.country}
                   onChange={(e) => updateField('country', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                 >
                   <option value="">Select your country</option>
                   {COUNTRIES.map((c) => (
@@ -263,39 +263,15 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferred Currency <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { code: 'NGN', symbol: '₦' },
-                    { code: 'USD', symbol: '$' },
-                    { code: 'EUR', symbol: '€' },
-                    { code: 'GBP', symbol: '£' },
-                    { code: 'CAD', symbol: 'C$' },
-                  ].map((curr) => (
-                    <button
-                      key={curr.code}
-                      type="button"
-                      onClick={() => updateField('currency', curr.code)}
-                      className={`py-2 px-2 rounded-lg font-medium transition text-sm ${
-                        formData.currency === curr.code
-                          ? 'bg-blue-600 text-white border-2 border-blue-600'
-                          : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {curr.symbol} {curr.code}
-                    </button>
-                  ))}
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900">Wallet Currency: ₦ NGN (Nigerian Naira)</p>
+                  <p className="text-xs text-blue-700 mt-1">All transactions are processed in Naira via Paystack</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  ₦ NGN recommended - Full Paystack support (Africa). Other currencies for international cards.
-                </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                className="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition"
               >
                 Continue
               </button>
@@ -306,7 +282,7 @@ export default function SignupPage() {
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="signup-password" className="block text-sm font-medium text-black mb-1">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -316,13 +292,12 @@ export default function SignupPage() {
                     required
                     value={formData.password}
                     onChange={(e) => updateField('password', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Create a strong password"
+                    className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-black/60 hover:text-black text-sm"
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
@@ -331,7 +306,7 @@ export default function SignupPage() {
                 {/* Password Strength */}
                 {formData.password && (
                   <div className="mt-2">
-                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
                       <div className={`h-full ${strengthColor} ${strengthWidth} transition-all rounded-full`} />
                     </div>
                     <div className="mt-2 space-y-1">
@@ -339,7 +314,7 @@ export default function SignupPage() {
                         <p
                           key={req}
                           className={`text-xs flex items-center gap-1 ${
-                            passwordErrors.includes(req) ? 'text-gray-400' : 'text-green-600'
+                            passwordErrors.includes(req) ? 'text-black/40' : 'text-green-600'
                           }`}
                         >
                           <span>{passwordErrors.includes(req) ? '○' : '✓'}</span>
@@ -352,7 +327,7 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-black mb-1">
                   Confirm Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -361,8 +336,7 @@ export default function SignupPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={(e) => updateField('confirmPassword', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Re-enter your password"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                 />
                 {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                   <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
@@ -375,13 +349,13 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={formData.acceptTerms}
                   onChange={(e) => updateField('acceptTerms', e.target.checked)}
-                  className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  className="mt-1 h-4 w-4 text-blue-900 border-blue-200 rounded"
                 />
-                <label htmlFor="terms" className="text-sm text-gray-600">
+                <label htmlFor="terms" className="text-sm text-black">
                   I agree to the{' '}
-                  <span className="text-blue-600 hover:underline cursor-pointer">Terms of Service</span>{' '}
+                  <span className="text-blue-900 hover:underline cursor-pointer">Terms of Service</span>{' '}
                   and{' '}
-                  <span className="text-blue-600 hover:underline cursor-pointer">Privacy Policy</span>
+                  <span className="text-blue-900 hover:underline cursor-pointer">Privacy Policy</span>
                 </label>
               </div>
 
@@ -389,14 +363,14 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
+                  className="flex-1 bg-blue-50 text-black py-3 rounded-lg font-semibold hover:bg-blue-100 transition"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading || !formData.acceptTerms}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -416,9 +390,9 @@ export default function SignupPage() {
 
           {/* Divider */}
           <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-4 text-sm text-gray-400">or</span>
-            <div className="flex-1 border-t border-gray-200"></div>
+            <div className="flex-1 border-t border-blue-100"></div>
+            <span className="px-4 text-sm text-black/60">or</span>
+            <div className="flex-1 border-t border-blue-100"></div>
           </div>
 
           {/* Social Sign-up */}
@@ -426,7 +400,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => signIn('google', { callbackUrl: '/auth/complete-profile' })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-gray-700"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-blue-200 rounded-lg hover:bg-blue-50 transition font-medium text-black"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -439,12 +413,20 @@ export default function SignupPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-center mt-8 text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-blue-600 font-semibold hover:text-blue-700">
-              Sign in
-            </Link>
-          </p>
+          <div className="mt-8 space-y-3 border-t border-blue-100 pt-6">
+            <p className="text-center text-sm text-black/70">
+              Didn&apos;t receive verification email?{' '}
+              <Link href="/auth/resend-verification" className="text-blue-900 font-semibold hover:text-blue-950">
+                Resend it
+              </Link>
+            </p>
+            <p className="text-center text-sm text-black">
+              Already have an account?{' '}
+              <Link href="/auth/login" className="text-blue-900 font-semibold hover:text-blue-950">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

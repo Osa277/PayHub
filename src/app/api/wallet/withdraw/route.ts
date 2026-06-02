@@ -51,12 +51,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Calculate fee (1% withdrawal fee)
-    const fee = amount * 0.01
+    // Calculate fee (1% withdrawal fee, rounded to 2 decimal places)
+    const fee = Math.round(amount * 0.01 * 100) / 100
     const totalAmount = amount + fee
 
     // Check balance
-    if (wallet.balance < totalAmount) {
+    if (Number(wallet.balance) < totalAmount) {
       return NextResponse.json(
         { success: false, error: 'Insufficient balance' },
         { status: 400 }
@@ -101,26 +101,26 @@ export async function POST(req: NextRequest) {
         reason: description || 'Withdrawal via PayHub',
       })
 
-      // Update transaction with reference
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: 'completed',
-          metadata: {
-            ...(((transaction.metadata || {}) as Record<string, any>)),
-            transferReference: transferRes.data.reference,
-            transferCode: transferRes.data.transfer_code,
+      // Update transaction and deduct balance atomically
+      await prisma.$transaction([
+        prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'completed',
+            metadata: {
+              ...(((transaction.metadata || {}) as Record<string, any>)),
+              transferReference: transferRes.data.reference,
+              transferCode: transferRes.data.transfer_code,
+            },
           },
-        },
-      })
-
-      // Deduct from wallet
-      await prisma.wallet.update({
-        where: { id: wallet.id },
-        data: {
-          balance: wallet.balance - totalAmount,
-        },
-      })
+        }),
+        prisma.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance: { decrement: totalAmount },
+          },
+        }),
+      ])
 
       return NextResponse.json(
         {
@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
         },
         { status: 201 }
       )
-    } catch (paystackError: any) {
+    } catch (paystackError) {
+      const errMessage = paystackError instanceof Error ? paystackError.message : 'Paystack transfer failed'
       logger.error('Paystack transfer error', { error: paystackError })
 
       // Update transaction to failed
@@ -139,8 +140,8 @@ export async function POST(req: NextRequest) {
         data: {
           status: 'failed',
           metadata: {
-            ...(((transaction.metadata || {}) as Record<string, any>)),
-            error: paystackError.message,
+            ...(((transaction.metadata || {}) as Record<string, unknown>)),
+            error: errMessage,
           },
         },
       })
@@ -148,7 +149,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: paystackError.message || 'Paystack transfer failed',
+          error: errMessage,
         },
         { status: 400 }
       )

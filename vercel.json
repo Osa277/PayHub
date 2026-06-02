@@ -2,10 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/invoices/recurring",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "functions": {
-    "src/app/api/webhooks/nowpayments/route.ts": {
-      "maxDuration": 30
-    },
     "src/app/api/payments/route.ts": {
       "maxDuration": 30
     },

@@ -57,8 +57,8 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">💳</div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-500 mt-1">Sign in to your PayHub account</p>
+            <h1 className="text-2xl font-bold text-black">Welcome Back</h1>
+            <p className="text-black mt-1">Sign in to your PayHub account</p>
           </div>
 
           {/* Error Alert */}
@@ -71,7 +71,7 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-black mb-1">
                 Email Address
               </label>
               <input
@@ -80,19 +80,19 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="you@example.com"
+                className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
+                placeholder="Email address"
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-black">
                   Password
                 </label>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-sm text-blue-900 hover:text-blue-950"
                 >
                   Forgot password?
                 </Link>
@@ -104,13 +104,13 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-black/60 hover:text-black text-sm"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -138,9 +138,9 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-4 text-sm text-gray-400">or</span>
-            <div className="flex-1 border-t border-gray-200"></div>
+            <div className="flex-1 border-t border-blue-100"></div>
+            <span className="px-4 text-sm text-black/60">or</span>
+            <div className="flex-1 border-t border-blue-100"></div>
           </div>
 
           {/* Social Login */}
@@ -148,7 +148,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-gray-700"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-blue-200 rounded-lg hover:bg-blue-50 transition font-medium text-black"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -160,13 +160,21 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Footer */}
-          <p className="text-center mt-8 text-sm text-gray-500">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="text-blue-600 font-semibold hover:text-blue-700">
-              Sign up
-            </Link>
-          </p>
+          {/* Help Links */}
+          <div className="mt-8 space-y-3 border-t border-blue-100 pt-6">
+            <p className="text-center text-sm text-black/70">
+              Didn&apos;t receive verification email?{' '}
+              <Link href="/auth/resend-verification" className="text-blue-900 font-semibold hover:text-blue-950">
+                Get a new link
+              </Link>
+            </p>
+            <p className="text-center text-sm text-black">
+              Don&apos;t have an account?{' '}
+              <Link href="/auth/signup" className="text-blue-900 font-semibold hover:text-blue-950">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

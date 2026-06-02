@@ -19,6 +19,8 @@ interface LogEntry {
   };
 }
 
+import { Sentry } from '@/lib/sentry'
+
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -47,6 +49,17 @@ class Logger {
   }
 
   /**
+   * Redact sensitive fields from context
+   */
+  private redactSensitive(context: Record<string, any>): Record<string, any> {
+    const sensitiveKeys = ['password', 'hashedpassword', 'token', 'secret', 'privatekey', 'mnemonic', 'encryptedprivatekey', 'encryptedmnemonic', 'authorization']
+    return JSON.parse(JSON.stringify(context, (key, value) => {
+      if (sensitiveKeys.includes(key.toLowerCase())) return '[REDACTED]'
+      return value
+    }))
+  }
+
+  /**
    * Core logging method
    */
   private log(level: LogLevel, message: string, options?: {
@@ -61,7 +74,7 @@ class Logger {
       message,
       requestId: options?.requestId,
       userId: options?.userId,
-      context: options?.context,
+      context: options?.context ? this.redactSensitive(options.context) : undefined,
     };
 
     if (options?.error) {
@@ -73,24 +86,37 @@ class Logger {
     }
 
     const formatted = this.formatLog(entry);
-    
-    // Output based on level
-    switch (level) {
-      case 'debug':
-        if (this.isDevelopment) console.debug(formatted);
-        break;
-      case 'info':
-        console.log(formatted);
-        break;
-      case 'warn':
-        console.warn(formatted);
-        break;
-      case 'error':
-        console.error(formatted);
-        break;
+
+    // Output based on level (only in development)
+    if (this.isDevelopment) {
+      switch (level) {
+        case 'debug':
+          console.debug(formatted);
+          break;
+        case 'info':
+          console.log(formatted);
+          break;
+        case 'warn':
+          console.warn(formatted);
+          break;
+        case 'error':
+          console.error(formatted);
+          break;
+      }
     }
 
-    // Return structured entry for potential external logging service
+    // Send errors to Sentry in production
+    if (level === 'error' && process.env.NODE_ENV === 'production' && options?.error) {
+      Sentry.captureException(options.error, {
+        extra: {
+          message,
+          requestId: options.requestId,
+          userId: options.userId,
+          context: options.context,
+        },
+      })
+    }
+
     return entry;
   }
 

@@ -6,4 +6,5 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Cache the instance in development to avoid exhausting DB connections during HMR
+if (process.env.NODE_ENV === 'development') globalForPrisma.prisma = prisma

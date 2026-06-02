@@ -64,19 +64,19 @@ export function BankAccountManager({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Bank Accounts</h3>
+        <h3 className="text-lg font-semibold text-black">Bank Accounts</h3>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-950"
         >
           {showForm ? 'Cancel' : 'Add Account'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg space-y-3">
+        <form onSubmit={handleSubmit} className="bg-blue-50 p-4 rounded-lg space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Account Name
             </label>
             <input
@@ -85,13 +85,13 @@ export function BankAccountManager({
               onChange={(e) =>
                 setFormData({ ...formData, accountName: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-black"
               placeholder="Your name as on bank account"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Account Number
             </label>
             <input
@@ -100,14 +100,14 @@ export function BankAccountManager({
               onChange={(e) =>
                 setFormData({ ...formData, accountNumber: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-black"
               placeholder="10 digit account number"
               maxLength={10}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Bank
             </label>
             <select
@@ -120,7 +120,7 @@ export function BankAccountManager({
                   bankName: selected?.name || '',
                 })
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-black"
             >
               <option value="">Select bank</option>
               {nigerianBanks.map((bank) => (
@@ -136,7 +136,7 @@ export function BankAccountManager({
           <button
             type="submit"
             disabled={submitLoading}
-            className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="w-full py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-950 disabled:opacity-50"
           >
             {submitLoading ? 'Adding...' : 'Add Account'}
           </button>
@@ -144,17 +144,17 @@ export function BankAccountManager({
       )}
 
       {accounts.length === 0 ? (
-        <p className="text-gray-500 text-sm">No bank accounts added yet</p>
+        <p className="text-black text-sm">No bank accounts added yet</p>
       ) : (
         <div className="space-y-2">
           {accounts.map((account) => (
             <div
               key={account.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
             >
               <div>
-                <p className="font-medium text-gray-900">{account.bankName}</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-black">{account.bankName}</p>
+                <p className="text-sm text-black">
                   {account.accountName} • ••••{account.accountNumber.slice(-4)}
                 </p>
               </div>

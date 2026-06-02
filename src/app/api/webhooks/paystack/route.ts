@@ -1,7 +1,9 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import crypto from 'crypto'
+import { apiSuccess, apiError } from '@/lib/api-response'
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || ''
 
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     if (!PAYSTACK_SECRET_KEY || !PAYSTACK_SECRET_KEY.startsWith('sk_')) {
       logger.error('Paystack webhook: secret key not configured')
-      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
+      return NextResponse.json(apiError('Webhook not configured', 500), { status: 500 })
     }
 
     const rawBody = await req.text()
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (!signature || !verifyWebhookSignature(rawBody, signature)) {
       logger.error('Paystack webhook: invalid signature')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+      return NextResponse.json(apiError('Invalid signature', 400), { status: 400 })
     }
 
     const event = JSON.parse(rawBody)
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
         })
         logger.info('Paystack webhook: payment failed', { context: { reference } })
       }
-      return NextResponse.json({ received: true })
+      return NextResponse.json(apiSuccess({ received: true }))
     }
 
     if (event.event === 'charge.success') {
@@ -56,12 +58,12 @@ export async function POST(req: NextRequest) {
 
       if (!paymentSession) {
         logger.error('Paystack webhook: session not found', { context: { reference } })
-        return NextResponse.json({ received: true })
+        return NextResponse.json(apiSuccess({ received: true }))
       }
 
       // Skip if already completed
       if (paymentSession.status === 'completed') {
-        return NextResponse.json({ received: true })
+        return NextResponse.json(apiSuccess({ received: true }))
       }
 
       const userId = paymentSession.userId
@@ -94,9 +96,9 @@ export async function POST(req: NextRequest) {
       logger.info('Paystack webhook: payment processed', { context: { reference, amount: amountInMajorUnit } })
     }
 
-    return NextResponse.json({ received: true })
+    return NextResponse.json(apiSuccess({ received: true }))
   } catch (error) {
     logger.error('Paystack webhook error', { error })
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+    return NextResponse.json(apiError('Webhook processing failed', 500), { status: 500 })
   }
 }

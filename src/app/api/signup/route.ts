@@ -1,32 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { logger } from '@/lib/logger'
 import { signupSchema } from '@/lib/validations'
 import { notifyWelcome } from '@/lib/notifications'
+import { sendVerificationEmail } from '@/lib/email'
 import { rateLimiters } from '@/lib/rate-limit'
+import { apiSuccess, apiError } from '@/lib/api-response'
 
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const { success: allowed } = rateLimiters.signup(ip)
     if (!allowed) {
-      return NextResponse.json(
-        { success: false, error: 'Too many signup attempts. Please try again later.' },
-        { status: 429 }
-      )
+      return NextResponse.json(apiError('Too many signup attempts. Please try again later.', 429), { status: 429 })
     }
 
     const body = await request.json()
     const parsed = signupSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0].message },
-        { status: 400 }
-      )
+      return NextResponse.json(apiError(parsed.error.issues[0].message, 400), { status: 400 })
     }
 
-    const { name, email, password, phone, country, currency } = parsed.data
+    const { name, email, password, phone, country } = parsed.data
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({
@@ -34,10 +31,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      return NextResponse.json(
-        { success: false, error: 'Unable to create account. Please try a different email.' },
-        { status: 409 }
-      )
+      return NextResponse.json(apiError('Unable to create account. Please try a different email.', 409), { status: 409 })
     }
 
     // Hash password
@@ -54,7 +48,7 @@ export async function POST(request: NextRequest) {
         wallet: {
           create: {
             balance: 0,
-            currency: currency || 'USD',
+            currency: 'NGN',
           },
         },
       },
@@ -62,22 +56,35 @@ export async function POST(request: NextRequest) {
     })
 
     // Send welcome email (non-blocking)
-    notifyWelcome(user.email, user.name || 'there').catch(() => {})
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      message: 'Account created successfully',
+    notifyWelcome(user.email, user.name || 'there').catch((error) => {
+      logger.warn('Failed to send welcome email', { error, email: user.email })
     })
+
+    // Generate verification token and send verification email
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+    await prisma.verificationToken.create({
+      data: {
+        identifier: user.email,
+        token: verificationToken,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      },
+    })
+    sendVerificationEmail(user.email, verificationToken).catch((error) => {
+      logger.error('Failed to send verification email', { error, email: user.email })
+    })
+
+    return NextResponse.json(
+      apiSuccess(
+        {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+        'Account created successfully. Please check your email to verify your account.'
+      )
+    )
   } catch (error) {
     logger.error('Signup error', { error })
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json(apiError('Internal server error', 500), { status: 500 })
   }
 }

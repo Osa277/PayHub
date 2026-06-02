@@ -20,10 +20,13 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: bankAccounts,
     })
+
+    response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30')
+    return response
   } catch (error) {
     logger.error('Bank accounts fetch error', { error })
     return NextResponse.json(

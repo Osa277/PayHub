@@ -39,7 +39,7 @@ export default function ProfilePage() {
       setBio(profile.bio || '')
       setPhone(profile.phone || '')
       setCountry(profile.country || '')
-      setCurrency(profile.currency || 'USD')
+      setCurrency(profile.currency || 'NGN')
     }
   }, [profile])
 
@@ -71,12 +71,12 @@ export default function ProfilePage() {
     return (
       <AuthGuard>
         <div className="max-w-2xl mx-auto animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-40" />
+          <div className="h-8 bg-blue-100 rounded w-40" />
           <div className="bg-white rounded-xl shadow p-8 space-y-4">
-            <div className="h-20 w-20 bg-gray-200 rounded-full mx-auto" />
-            <div className="h-10 bg-gray-200 rounded" />
-            <div className="h-10 bg-gray-200 rounded" />
-            <div className="h-20 bg-gray-200 rounded" />
+            <div className="h-20 w-20 bg-blue-100 rounded-full mx-auto" />
+            <div className="h-10 bg-blue-100 rounded" />
+            <div className="h-10 bg-blue-100 rounded" />
+            <div className="h-20 bg-blue-100 rounded" />
           </div>
         </div>
       </AuthGuard>
@@ -91,10 +91,10 @@ export default function ProfilePage() {
     <AuthGuard>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+          <h1 className="text-3xl font-bold text-black">Profile</h1>
           <button
             onClick={() => router.back()}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-black hover:text-blue-900"
           >
             ← Back
           </button>
@@ -103,7 +103,7 @@ export default function ProfilePage() {
         <form onSubmit={handleSave} className="bg-white rounded-xl shadow-lg p-8 space-y-6">
           {/* Avatar */}
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600 mx-auto mb-3">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-900 mx-auto mb-3">
               {avatar || initials}
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -113,7 +113,7 @@ export default function ProfilePage() {
                   key={a}
                   onClick={() => setAvatar(a)}
                   className={`w-10 h-10 rounded-full text-xl flex items-center justify-center transition ${
-                    avatar === a ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-gray-50 hover:bg-gray-100'
+                    avatar === a ? 'bg-blue-100 ring-2 ring-blue-900' : 'bg-blue-50 hover:bg-blue-100'
                   }`}
                 >
                   {a}
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setAvatar('')}
-                  className="w-10 h-10 rounded-full text-xs text-gray-500 bg-gray-50 hover:bg-gray-100 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full text-xs text-black bg-blue-50 hover:bg-blue-100 flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -133,101 +133,80 @@ export default function ProfilePage() {
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-black mb-1">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
             />
           </div>
 
           {/* Email (read-only) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-black mb-1">Email</label>
             <input
               type="email"
               value={profile?.email || ''}
               disabled
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-500 bg-gray-50"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black/60 bg-blue-50"
             />
           </div>
 
           {/* Bio */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+            <label className="block text-sm font-medium text-black mb-1">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               maxLength={200}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent resize-none"
               placeholder="Tell us about yourself"
             />
-            <p className="text-xs text-gray-400 mt-1">{bio.length}/200</p>
+            <p className="text-xs text-black/60 mt-1">{bio.length}/200</p>
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-black mb-1">Phone</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="+1 234 567 8900"
             />
           </div>
 
           {/* Country */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+            <label className="block text-sm font-medium text-black mb-1">Country</label>
             <input
               type="text"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-blue-200 rounded-lg text-black focus:ring-2 focus:ring-blue-900 focus:border-transparent"
               placeholder="e.g. United States"
             />
           </div>
 
           {/* Currency */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Preferred Currency <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-black mb-2">
+              Wallet Currency
             </label>
-            <div className="grid grid-cols-5 gap-2">
-              {[
-                { code: 'NGN', symbol: '₦' },
-                { code: 'USD', symbol: '$' },
-                { code: 'EUR', symbol: '€' },
-                { code: 'GBP', symbol: '£' },
-                { code: 'CAD', symbol: 'C$' },
-              ].map((c) => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setCurrency(c.code)}
-                  className={`py-2 px-2 rounded-lg text-sm font-medium transition ${
-                    currency === c.code
-                      ? 'bg-blue-600 text-white border-2 border-blue-600'
-                      : 'bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  {c.symbol} {c.code}
-                </button>
-              ))}
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-sm font-medium text-blue-900">₦ NGN (Nigerian Naira)</p>
+              <p className="text-xs text-blue-700 mt-1">All transactions are processed in Naira via Paystack</p>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              ₦ NGN recommended - Full Paystack support (Africa). Other currencies for international cards.
-            </p>
           </div>
 
           {/* Submit */}
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
+            className="w-full py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-950 disabled:opacity-50 transition"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

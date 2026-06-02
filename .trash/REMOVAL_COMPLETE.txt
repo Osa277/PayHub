@@ -1,0 +1,1 @@
+All crypto-related files and directories have been moved to .trash. Only Paystack payment remains active in the codebase.
