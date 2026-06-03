@@ -22,11 +22,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // CSRF protection: verify Origin header on state-mutating API requests
+  // Skip CSRF for auth and webhook endpoints - they need special handling
   if (pathname.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-    // Skip CSRF check for webhook endpoints (they come from external services)
     if (!pathname.startsWith('/api/webhooks') && !pathname.startsWith('/api/auth')) {
       const origin = request.headers.get('origin')
       const host = request.headers.get('host')
+      
+      // Allow requests with valid origin, null origin (mobile WebView), or same-host requests
       if (origin && host) {
         const originHost = new URL(origin).host
         if (originHost !== host) {
@@ -36,6 +38,7 @@ export async function middleware(request: NextRequest) {
           )
         }
       }
+      // null origin is allowed for mobile WebViews and same-site requests
     }
   }
 

@@ -8,6 +8,8 @@ import { rateLimiters } from '@/lib/rate-limit'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
+  trustHost: true, // Required for production & mobile - allows callbacks from Vercel domain
+  useSecureCookies: true, // Required for HTTPS production
   session: {
     strategy: 'jwt',
     maxAge: 24 * 60 * 60, // 24 hours
