@@ -56,7 +56,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await sendVerificationEmail(email, token)
+    // Send email non-blocking (don't fail if email service fails)
+    sendVerificationEmail(email, token).catch((error) => {
+      logger.error('Failed to send verification email', { 
+        context: { email, error: error instanceof Error ? error.message : String(error) } 
+      })
+    })
 
     logger.info('Verification email resent', { context: { email } })
 

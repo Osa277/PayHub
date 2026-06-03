@@ -70,20 +70,13 @@ export async function POST(request: NextRequest) {
       },
     })
     
-    try {
-      await sendVerificationEmail(user.email, verificationToken)
-    } catch (error) {
-      logger.error('Failed to send verification email - aborting signup', { error })
-      // Delete the user since email verification is required
-      await prisma.user.delete({ where: { id: user.id } })
-      await prisma.verificationToken.delete({
-        where: { identifier_token: { identifier: user.email, token: verificationToken } },
+    // Send verification email (non-blocking - don't fail signup if email fails)
+    sendVerificationEmail(user.email, verificationToken).catch((error) => {
+      logger.error('Failed to send verification email during signup', { 
+        context: { email: user.email, error: error instanceof Error ? error.message : String(error) } 
       })
-      return NextResponse.json(
-        apiError('Failed to send verification email. Please check your email and try again.', 500),
-        { status: 500 }
-      )
-    }
+      // Don't delete user - they can resend verification later
+    })
 
     return NextResponse.json(
       apiSuccess(
