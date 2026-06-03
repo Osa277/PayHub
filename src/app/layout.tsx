@@ -3,6 +3,7 @@ import { Navbar } from '@/components/Navbar'
 import { AuthProvider } from '@/components/AuthProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ToastProvider } from '@/components/Toast'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
             </main>
           </ToastProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   )
