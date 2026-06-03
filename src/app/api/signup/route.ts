@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       logger.warn('Failed to send welcome email', { error })
     })
 
-    // Generate verification token and send verification email
+    // Generate verification token and send verification email (REQUIRED)
     const verificationToken = crypto.randomBytes(32).toString('hex')
     await prisma.verificationToken.create({
       data: {
@@ -69,9 +69,21 @@ export async function POST(request: NextRequest) {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
     })
-    sendVerificationEmail(user.email, verificationToken).catch((error) => {
-      logger.error('Failed to send verification email', { error })
-    })
+    
+    try {
+      await sendVerificationEmail(user.email, verificationToken)
+    } catch (error) {
+      logger.error('Failed to send verification email - aborting signup', { error })
+      // Delete the user since email verification is required
+      await prisma.user.delete({ where: { id: user.id } })
+      await prisma.verificationToken.delete({
+        where: { identifier_token: { identifier: user.email, token: verificationToken } },
+      })
+      return NextResponse.json(
+        apiError('Failed to send verification email. Please check your email and try again.', 500),
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       apiSuccess(

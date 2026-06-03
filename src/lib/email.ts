@@ -5,6 +5,12 @@ const resendApiKey = process.env.RESEND_API_KEY
 const resend = resendApiKey ? new Resend(resendApiKey) : null
 const fromEmail = process.env.EMAIL_FROM || 'PayHub <noreply@payhub.com>'
 
+// Log on startup to help debug
+if (!resend) {
+  console.error('⚠️ RESEND_API_KEY is not configured. Emails will not be sent.')
+  logger.error('Resend not configured', { context: { resendApiKey: resendApiKey ? 'set' : 'missing' } })
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}&email=${encodeURIComponent(email)}`
 
@@ -34,25 +40,39 @@ export async function sendVerificationEmail(email: string, token: string) {
   const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`
 
   if (!resend) {
-    logger.warn('Resend not configured — logging verification link instead', {
-      context: { email, verifyUrl },
+    logger.error('Resend not configured — cannot send verification email', {
+      context: { email, verifyUrl, resendApiKey: process.env.RESEND_API_KEY ? 'set but invalid' : 'missing' },
     })
-    return
+    throw new Error('Email service not configured')
   }
 
-  await resend.emails.send({
-    from: fromEmail,
-    to: email,
-    subject: 'Verify your PayHub email',
-    html: `
-      <h2>Verify Your Email</h2>
-      <p>Welcome to PayHub! Click the button below to verify your email address. This link expires in 24 hours.</p>
-      <a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;border-radius:8px;text-decoration:none;">Verify Email</a>
-      <p style="margin-top:16px;color:#888;">If you didn't create a PayHub account, you can safely ignore this email.</p>
-    `,
-  })
+  try {
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: 'Verify your PayHub email',
+      html: `
+        <h2>Verify Your Email</h2>
+        <p>Welcome to PayHub! Click the button below to verify your email address. This link expires in 24 hours.</p>
+        <a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;border-radius:8px;text-decoration:none;">Verify Email</a>
+        <p style="margin-top:16px;color:#888;">If you didn't create a PayHub account, you can safely ignore this email.</p>
+      `,
+    })
 
-  logger.info('Verification email sent', { context: { email } })
+    if (result.error) {
+      logger.error('Verification email send failed', { 
+        context: { email, error: result.error } 
+      })
+      throw new Error(`Email send failed: ${result.error}`)
+    }
+
+    logger.info('Verification email sent', { context: { email } })
+  } catch (error) {
+    logger.error('Verification email error', { 
+      context: { email, error: error instanceof Error ? error.message : String(error) } 
+    })
+    throw error
+  }
 }
 
 interface InvoiceEmailData {
