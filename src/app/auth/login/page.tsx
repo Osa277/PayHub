@@ -8,7 +8,6 @@ import { useAuthTracker } from '@/lib/tracking-hooks'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { update: updateSession } = useSession()
   const trackAuth = useAuthTracker()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

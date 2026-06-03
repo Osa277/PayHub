@@ -16,6 +16,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }, 100)
       return () => clearTimeout(timer)
     }
+    // No cleanup needed for other states
+    return undefined
   }, [status, router])
 
   // Show loading state while session is being loaded
