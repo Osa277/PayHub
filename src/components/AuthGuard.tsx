@@ -8,11 +8,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
 
   useEffect(() => {
+    // If user is explicitly unauthenticated after loading, redirect to login
     if (status === 'unauthenticated') {
-      router.push('/auth/login')
+      // Give a brief moment for session to potentially load before redirecting
+      const timer = setTimeout(() => {
+        router.push('/auth/login')
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [status, router])
 
+  // Show loading state while session is being loaded
   if (status === 'loading' || !session) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">

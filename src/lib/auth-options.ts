@@ -10,13 +10,13 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
   trustHost: true, // Required for production & mobile - allows callbacks from Vercel domain
   useSecureCookies: true, // Required for HTTPS production
-  session: {
-    strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
-  },
   pages: {
     signIn: '/auth/login',
     newUser: '/auth/complete-profile',
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   providers: [
     GoogleProvider({
@@ -113,6 +113,18 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as Record<string, unknown>).currency = token.currency ?? 'NGN'
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Ensure redirects stay on the app domain
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Allow redirects to same domain
+      if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      // Default to dashboard after login
+      return `${baseUrl}/dashboard`
     },
   },
   events: {

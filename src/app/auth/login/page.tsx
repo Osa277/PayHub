@@ -2,12 +2,13 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { useToast } from '@/components/Toast'
 import { useAuthTracker } from '@/lib/tracking-hooks'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { update: updateSession } = useSession()
   const trackAuth = useAuthTracker()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,17 +36,24 @@ export default function LoginPage() {
         setError(result.error)
         // Track failed login
         trackAuth('login_failed', { email, reason: result.error })
+        setIsLoading(false)
       } else {
         toast('Welcome back!')
         // Track successful login
         trackAuth('login_success', { email, authProvider: 'credentials' })
+        
+        // Ensure session is updated before redirecting
+        await updateSession()
+        
+        // Wait a brief moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         router.push('/dashboard')
         router.refresh()
       }
     } catch (err) {
       setError('An unexpected error occurred')
       trackAuth('login_error', { email, error: String(err) })
-    } finally {
       setIsLoading(false)
     }
   }
