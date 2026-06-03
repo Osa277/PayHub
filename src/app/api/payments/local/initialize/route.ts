@@ -21,18 +21,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if user email is verified
+    // Check if user email is verified (OPTIONAL FOR NOW - debug mode)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { emailVerified: true, isVerified: true },
     })
 
-    if (!user?.emailVerified && !user?.isVerified) {
-      return NextResponse.json(
-        { success: false, error: 'Please verify your email before making payments' },
-        { status: 403 }
-      )
-    }
+    // TODO: Remove this after Resend email is fixed
+    // For now, allow unverified users to make payments for testing
+    // if (!user?.emailVerified && !user?.isVerified) {
+    //   return NextResponse.json(
+    //     { success: false, error: 'Please verify your email before making payments' },
+    //     { status: 403 }
+    //   )
+    // }
 
     if (!isPaystackConfigured()) {
       return NextResponse.json(
