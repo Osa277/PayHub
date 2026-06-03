@@ -62,7 +62,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check for auth token (all non-public routes require auth)
-  const token = await getToken({ req: request })
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET 
+  })
 
   if (!token) {
     // API routes return 401

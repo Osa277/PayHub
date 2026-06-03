@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn } from 'next-auth/react'
 import { useToast } from '@/components/Toast'
 import { useAuthTracker } from '@/lib/tracking-hooks'
 
@@ -26,10 +26,12 @@ export default function LoginPage() {
     trackAuth('login_attempt', { email, timestamp: new Date().toISOString() })
 
     try {
+      // Use signIn with redirect: true to let NextAuth handle the redirect
+      // This ensures the cookie is properly set before redirecting
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        redirect: false, // We'll handle redirect manually to show success toast first
       })
 
       if (result?.error) {
@@ -37,19 +39,15 @@ export default function LoginPage() {
         // Track failed login
         trackAuth('login_failed', { email, reason: result.error })
         setIsLoading(false)
-      } else {
+      } else if (result?.ok) {
         toast('Welcome back!')
         // Track successful login
         trackAuth('login_success', { email, authProvider: 'credentials' })
         
-        // Ensure session is updated before redirecting
-        await updateSession()
-        
-        // Wait a brief moment for session to be established
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        router.push('/dashboard')
-        router.refresh()
+        // Small delay to ensure session is established, then redirect
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 500)
       }
     } catch (err) {
       setError('An unexpected error occurred')

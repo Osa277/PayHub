@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs'
 import { rateLimiters } from '@/lib/rate-limit'
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
   trustHost: true, // Required for production & mobile - allows callbacks from Vercel domain
   useSecureCookies: true, // Required for HTTPS production
@@ -67,6 +68,11 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Allow all sign-ins for now
+      // This callback runs before the user is actually signed in
+      return true
+    },
     async jwt({ token, user, trigger }) {
       // On initial sign-in, store user data in the token
       if (user) {
